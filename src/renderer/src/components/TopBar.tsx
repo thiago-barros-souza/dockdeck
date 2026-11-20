@@ -19,8 +19,8 @@ import {
 
 interface TopBarProps {
   selectedContainer: ContainerSummary | null;
-  activeTab: 'metrics' | 'logs' | 'inspect';
-  onChangeTab: (tab: 'metrics' | 'logs' | 'inspect') => void;
+  activeTab: 'metrics' | 'logs' | 'inspect' | 'terminal';
+  onChangeTab: (tab: 'metrics' | 'logs' | 'inspect' | 'terminal') => void;
   onExecuteAction: (action: ContainerAction) => void;
   isActionLoading: boolean;
   onOpenShortcuts: () => void;
@@ -150,6 +150,18 @@ export const TopBar: React.FC<TopBarProps> = ({
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Logs</span>
+          </button>
+
+          <button
+            onClick={() => onChangeTab('terminal')}
+            className={`px-3 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-all ${
+              activeTab === 'terminal'
+                ? 'bg-surface text-accent shadow-sm'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Terminal className="w-3.5 h-3.5" />
+            <span>Terminal</span>
           </button>
 
           <button

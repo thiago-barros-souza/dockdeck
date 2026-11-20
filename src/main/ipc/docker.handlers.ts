@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain } from 'electron';
 import { DockerService } from '../services/docker.service';
 import { ConnectionManager } from '../services/connection.manager';
 import { ContainerAction, ConnectionProfile } from '../../shared/types';
@@ -60,6 +60,69 @@ export function registerDockerIpcHandlers(
   ipcMain.handle('docker:stop-logs', (_, containerId: string) => {
     dockerService.stopLogsStream(containerId);
     return { streaming: false };
+  });
+
+  // Terminal Exec
+  ipcMain.handle('docker:start-exec', async (event, containerId: string) => {
+    const webContents = event.sender;
+    const sessionId = await dockerService.startExecSession(
+      containerId,
+      (data) => {
+        if (!webContents.isDestroyed()) {
+          webContents.send(`docker:exec-data:${sessionId}`, data);
+        }
+      },
+      () => {
+        if (!webContents.isDestroyed()) {
+          webContents.send(`docker:exec-exit:${sessionId}`);
+        }
+      }
+    );
+    return { sessionId };
+  });
+
+  ipcMain.handle(
+    'docker:send-exec-input',
+    (_, sessionId: string, data: string) => {
+      dockerService.sendExecInput(sessionId, data);
+      return { success: true };
+    }
+  );
+
+  ipcMain.handle(
+    'docker:resize-exec',
+    (_, sessionId: string, width: number, height: number) => {
+      dockerService.resizeExec(sessionId, width, height);
+      return { success: true };
+    }
+  );
+
+  ipcMain.handle('docker:stop-exec', (_, sessionId: string) => {
+    dockerService.stopExecSession(sessionId);
+    return { success: true };
+  });
+
+  // Images and Volumes
+  ipcMain.handle('docker:list-images', async () => {
+    return await dockerService.listImages();
+  });
+
+  ipcMain.handle('docker:remove-image', async (_, id: string) => {
+    await dockerService.removeImage(id);
+    return { success: true };
+  });
+
+  ipcMain.handle('docker:list-volumes', async () => {
+    return await dockerService.listVolumes();
+  });
+
+  ipcMain.handle('docker:remove-volume', async (_, name: string) => {
+    await dockerService.removeVolume(name);
+    return { success: true };
+  });
+
+  ipcMain.handle('docker:prune-system', async () => {
+    return await dockerService.pruneSystem();
   });
 
   // Profiles and Connection switching

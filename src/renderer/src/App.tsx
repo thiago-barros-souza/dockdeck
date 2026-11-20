@@ -10,13 +10,14 @@ import { TopBar } from './components/TopBar';
 import { MetricsView } from './components/MetricsView';
 import { LogsView } from './components/LogsView';
 import { InspectView } from './components/InspectView';
+import { TerminalView } from './components/TerminalView';
 import { ConnectionModal } from './components/ConnectionModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
 
 export const App: React.FC = () => {
   const [containers, setContainers] = useState<ContainerSummary[]>([]);
   const [selectedContainer, setSelectedContainer] = useState<ContainerSummary | null>(null);
-  const [activeTab, setActiveTab] = useState<'metrics' | 'logs' | 'inspect'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'logs' | 'inspect' | 'terminal'>('metrics');
   const [isLoading, setIsLoading] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
@@ -65,7 +66,6 @@ export const App: React.FC = () => {
     loadProfiles();
     loadContainers();
 
-    // Auto-refresh container list every 6 seconds
     const interval = setInterval(() => {
       loadContainers();
     }, 6000);
@@ -132,10 +132,11 @@ export const App: React.FC = () => {
   // Keyboard navigation (lazydocker-style)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing inside an input or textarea
+      // Don't trigger if user is typing inside an input, textarea or terminal
       if (
         document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA'
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.classList.contains('xterm-helper-textarea')
       ) {
         return;
       }
@@ -153,7 +154,8 @@ export const App: React.FC = () => {
 
       if (e.key === '1') setActiveTab('metrics');
       if (e.key === '2') setActiveTab('logs');
-      if (e.key === '3') setActiveTab('inspect');
+      if (e.key === '3') setActiveTab('terminal');
+      if (e.key === '4') setActiveTab('inspect');
 
       if (e.ctrlKey && e.key.toLowerCase() === 'r') {
         e.preventDefault();
@@ -239,6 +241,13 @@ export const App: React.FC = () => {
               <LogsView
                 containerId={selectedContainer.id}
                 containerName={selectedContainer.name}
+              />
+            )}
+            {activeTab === 'terminal' && (
+              <TerminalView
+                containerId={selectedContainer.id}
+                containerName={selectedContainer.name}
+                isRunning={selectedContainer.state === 'running'}
               />
             )}
             {activeTab === 'inspect' && (

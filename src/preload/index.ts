@@ -5,7 +5,9 @@ import {
   ContainerMetrics,
   ContainerSummary,
   ContainerInspectData,
-  SystemDockerInfo
+  SystemDockerInfo,
+  ImageSummary,
+  VolumeSummary
 } from '../shared/types';
 
 export const dockerApi = {
@@ -61,6 +63,67 @@ export const dockerApi = {
     return ipcRenderer.invoke('docker:stop-logs', id);
   },
 
+  // Terminal Exec
+  startExec: (
+    containerId: string,
+    onData: (data: string) => void,
+    onExit: () => void
+  ): Promise<{ sessionId: string }> => {
+    return ipcRenderer
+      .invoke('docker:start-exec', containerId)
+      .then((res: { sessionId: string }) => {
+        const dataChannel = `docker:exec-data:${res.sessionId}`;
+        const exitChannel = `docker:exec-exit:${res.sessionId}`;
+
+        ipcRenderer.removeAllListeners(dataChannel);
+        ipcRenderer.removeAllListeners(exitChannel);
+
+        ipcRenderer.on(dataChannel, (_, data) => onData(data));
+        ipcRenderer.on(exitChannel, () => onExit());
+
+        return res;
+      });
+  },
+
+  sendExecInput: (sessionId: string, data: string): Promise<{ success: boolean }> => {
+    return ipcRenderer.invoke('docker:send-exec-input', sessionId, data);
+  },
+
+  resizeExec: (
+    sessionId: string,
+    width: number,
+    height: number
+  ): Promise<{ success: boolean }> => {
+    return ipcRenderer.invoke('docker:resize-exec', sessionId, width, height);
+  },
+
+  stopExec: (sessionId: string): Promise<{ success: boolean }> => {
+    ipcRenderer.removeAllListeners(`docker:exec-data:${sessionId}`);
+    ipcRenderer.removeAllListeners(`docker:exec-exit:${sessionId}`);
+    return ipcRenderer.invoke('docker:stop-exec', sessionId);
+  },
+
+  // Images and Volumes
+  listImages: (): Promise<ImageSummary[]> => {
+    return ipcRenderer.invoke('docker:list-images');
+  },
+
+  removeImage: (id: string): Promise<{ success: boolean }> => {
+    return ipcRenderer.invoke('docker:remove-image', id);
+  },
+
+  listVolumes: (): Promise<VolumeSummary[]> => {
+    return ipcRenderer.invoke('docker:list-volumes');
+  },
+
+  removeVolume: (name: string): Promise<{ success: boolean }> => {
+    return ipcRenderer.invoke('docker:remove-volume', name);
+  },
+
+  pruneSystem: (): Promise<{ spaceReclaimed: number }> => {
+    return ipcRenderer.invoke('docker:prune-system');
+  },
+
   // Connections
   getProfiles: (): Promise<{
     profiles: ConnectionProfile[];
@@ -95,6 +158,6 @@ if (process.contextIsolated) {
     console.error(error);
   }
 } else {
-  // @ts-ignore (define in dts)
+  // @ts-ignore
   window.dockerApi = dockerApi;
 }

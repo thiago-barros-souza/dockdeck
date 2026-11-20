@@ -14,9 +14,10 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
 
   const shortcuts = [
     { key: '↑ / ↓', desc: 'Navegar na lista de containers' },
-    { key: '1', desc: 'Abrir aba de Métricas' },
-    { key: '2', desc: 'Abrir aba de Logs' },
-    { key: '3', desc: 'Abrir aba de Inspecionar' },
+    { key: '1', desc: 'Aba de Métricas' },
+    { key: '2', desc: 'Aba de Logs' },
+    { key: '3', desc: 'Aba de Terminal (Shell Exec)' },
+    { key: '4', desc: 'Aba de Inspecionar' },
     { key: 'R', desc: 'Reiniciar container selecionado' },
     { key: 'S', desc: 'Parar container selecionado' },
     { key: 'P', desc: 'Pausar / Despausar container' },

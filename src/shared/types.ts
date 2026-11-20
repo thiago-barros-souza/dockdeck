@@ -100,3 +100,21 @@ export interface SystemDockerInfo {
   ncpu: number;
   memTotal: number;
 }
+
+export interface ImageSummary {
+  id: string;
+  shortId: string;
+  tags: string[];
+  size: number;
+  created: number;
+  containers: number;
+}
+
+export interface VolumeSummary {
+  name: string;
+  driver: string;
+  scope: string;
+  mountpoint: string;
+  createdAt?: string;
+  size?: number;
+}

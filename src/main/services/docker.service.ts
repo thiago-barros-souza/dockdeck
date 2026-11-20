@@ -1,17 +1,25 @@
 import Docker from 'dockerode';
-import { Readable } from 'stream';
+import { Readable, Duplex } from 'stream';
 import {
   ContainerSummary,
   ContainerMetrics,
   ContainerAction,
   ContainerInspectData,
-  SystemDockerInfo
+  SystemDockerInfo,
+  ImageSummary,
+  VolumeSummary
 } from '../../shared/types';
+
+interface ActiveExecSession {
+  stream: Duplex;
+  exec: any;
+}
 
 export class DockerService {
   private docker: Docker;
   private activeStatsStreams: Map<string, Readable> = new Map();
   private activeLogsStreams: Map<string, Readable> = new Map();
+  private activeExecSessions: Map<string, ActiveExecSession> = new Map();
 
   constructor(socketPath: string = '/var/run/docker.sock') {
     this.docker = new Docker({ socketPath });
@@ -140,6 +148,7 @@ export class DockerService {
     }
   }
 
+  // Live Metrics
   startStatsStream(id: string, onMetrics: (metrics: ContainerMetrics) => void): void {
     this.stopStatsStream(id);
 
@@ -164,7 +173,7 @@ export class DockerService {
             const metrics = this.calculateMetrics(id, raw);
             onMetrics(metrics);
           } catch {
-            // Partial JSON line, continue
+            // Partial JSON line
           }
         }
       });
@@ -187,6 +196,7 @@ export class DockerService {
     }
   }
 
+  // Logs stream
   startLogsStream(
     id: string,
     tail: number = 200,
@@ -210,8 +220,6 @@ export class DockerService {
         this.activeLogsStreams.set(id, readable);
 
         readable.on('data', (chunk: Buffer) => {
-          // Docker multiplexed log stream has an 8-byte header per frame
-          // [0: stream_type (1=stdout, 2=stderr), 1-3: zero, 4-7: payload size]
           let text = '';
           if (chunk.length >= 8 && (chunk[0] === 1 || chunk[0] === 2)) {
             text = chunk.subarray(8).toString('utf-8');
@@ -240,6 +248,126 @@ export class DockerService {
     }
   }
 
+  // Terminal Exec Session
+  async startExecSession(
+    containerId: string,
+    onData: (data: string) => void,
+    onExit: () => void
+  ): Promise<string> {
+    const container = this.docker.getContainer(containerId);
+
+    const exec = await container.exec({
+      AttachStdin: true,
+      AttachStdout: true,
+      AttachStderr: true,
+      Tty: true,
+      Cmd: ['/bin/sh', '-c', '[ -x /bin/bash ] && exec /bin/bash || exec /bin/sh']
+    });
+
+    const sessionId = `exec-${containerId}-${Date.now()}`;
+
+    return new Promise((resolve, reject) => {
+      exec.start({ hijack: true, stdin: true, Tty: true }, (err, stream) => {
+        if (err || !stream) {
+          reject(err || new Error('Falha ao iniciar stream do exec'));
+          return;
+        }
+
+        const duplex = stream as Duplex;
+        this.activeExecSessions.set(sessionId, { stream: duplex, exec });
+
+        duplex.on('data', (chunk: Buffer) => {
+          onData(chunk.toString('utf-8'));
+        });
+
+        duplex.on('end', () => {
+          this.activeExecSessions.delete(sessionId);
+          onExit();
+        });
+
+        duplex.on('error', () => {
+          this.activeExecSessions.delete(sessionId);
+          onExit();
+        });
+
+        resolve(sessionId);
+      });
+    });
+  }
+
+  sendExecInput(sessionId: string, data: string): void {
+    const session = this.activeExecSessions.get(sessionId);
+    if (session && session.stream.writable) {
+      session.stream.write(data);
+    }
+  }
+
+  resizeExec(sessionId: string, width: number, height: number): void {
+    const session = this.activeExecSessions.get(sessionId);
+    if (session && session.exec) {
+      try {
+        session.exec.resize({ h: height, w: width });
+      } catch {
+        // Ignore resize error
+      }
+    }
+  }
+
+  stopExecSession(sessionId: string): void {
+    const session = this.activeExecSessions.get(sessionId);
+    if (session) {
+      session.stream.destroy();
+      this.activeExecSessions.delete(sessionId);
+    }
+  }
+
+  // Images and Volumes
+  async listImages(): Promise<ImageSummary[]> {
+    const images = await this.docker.listImages({ all: true });
+    return images.map((img) => ({
+      id: img.Id,
+      shortId: img.Id.replace(/^sha256:/, '').substring(0, 12),
+      tags: img.RepoTags || ['<none>:<none>'],
+      size: img.Size,
+      created: img.Created,
+      containers: img.Containers
+    }));
+  }
+
+  async removeImage(id: string): Promise<void> {
+    const image = this.docker.getImage(id);
+    await image.remove({ force: true });
+  }
+
+  async listVolumes(): Promise<VolumeSummary[]> {
+    const res = await this.docker.listVolumes();
+    return (res.Volumes || []).map((v) => ({
+      name: v.Name,
+      driver: v.Driver,
+      scope: v.Scope,
+      mountpoint: v.Mountpoint,
+      createdAt: v.CreatedAt
+    }));
+  }
+
+  async removeVolume(name: string): Promise<void> {
+    const volume = this.docker.getVolume(name);
+    await volume.remove({ force: true });
+  }
+
+  async pruneSystem(): Promise<{ spaceReclaimed: number }> {
+    const contPrune = await this.docker.pruneContainers();
+    const imgPrune = await this.docker.pruneImages();
+    const volPrune = await this.docker.pruneVolumes();
+
+    const space =
+      (contPrune.SpaceReclaimed || 0) +
+      (imgPrune.SpaceReclaimed || 0) +
+      (volPrune.SpaceReclaimed || 0);
+
+    return { spaceReclaimed: space };
+  }
+
   stopAllStreams(): void {
     for (const [id, stream] of this.activeStatsStreams.entries()) {
       stream.destroy();
@@ -250,10 +378,14 @@ export class DockerService {
       stream.destroy();
     }
     this.activeLogsStreams.clear();
+
+    for (const [id, session] of this.activeExecSessions.entries()) {
+      session.stream.destroy();
+    }
+    this.activeExecSessions.clear();
   }
 
   calculateMetrics(containerId: string, stats: any): ContainerMetrics {
-    // CPU calculation
     let cpuPercent = 0.0;
     const cpuDelta =
       (stats.cpu_stats?.cpu_usage?.total_usage || 0) -
@@ -270,7 +402,6 @@ export class DockerService {
       cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100.0;
     }
 
-    // Memory calculation
     const memUsage = stats.memory_stats?.usage || 0;
     const cache =
       stats.memory_stats?.stats?.cache ||
@@ -280,7 +411,6 @@ export class DockerService {
     const memLimit = stats.memory_stats?.limit || 1;
     const memoryPercent = (actualMem / memLimit) * 100.0;
 
-    // Network calculation
     let networkRx = 0;
     let networkTx = 0;
     if (stats.networks) {
@@ -290,7 +420,6 @@ export class DockerService {
       }
     }
 
-    // Block I/O calculation
     let blockRead = 0;
     let blockWrite = 0;
     if (stats.blkio_stats?.io_service_bytes_recursive) {

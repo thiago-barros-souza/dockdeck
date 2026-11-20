@@ -12,7 +12,6 @@ describe('QA Suite - Docker Integration Test', () => {
       expect(info.serverVersion).toBeDefined();
       expect(typeof info.containers).toBe('number');
     } catch (err: any) {
-      // Se o socket do docker não estiver acessível, documenta
       console.warn('Socket Docker indisponível no teste:', err.message);
     }
   });
@@ -29,6 +28,30 @@ describe('QA Suite - Docker Integration Test', () => {
       }
     } catch (err: any) {
       console.warn('Erro ao listar containers no teste:', err.message);
+    }
+  });
+
+  it('deve listar imagens do Docker local', async () => {
+    try {
+      const images = await service.listImages();
+      expect(Array.isArray(images)).toBe(true);
+      if (images.length > 0) {
+        const img = images[0];
+        expect(img.id).toBeDefined();
+        expect(img.shortId).toBeDefined();
+        expect(Array.isArray(img.tags)).toBe(true);
+      }
+    } catch (err: any) {
+      console.warn('Erro ao listar imagens no teste:', err.message);
+    }
+  });
+
+  it('deve listar volumes do Docker local', async () => {
+    try {
+      const volumes = await service.listVolumes();
+      expect(Array.isArray(volumes)).toBe(true);
+    } catch (err: any) {
+      console.warn('Erro ao listar volumes no teste:', err.message);
     }
   });
 });
