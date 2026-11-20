@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import '@xterm/xterm/css/xterm.css';
+
+@theme {
+  --color-background: #0d1117;
+  --color-surface: #161b22;
+  --color-surfaceHover: #21262d;
+  --color-border: #30363d;
+  --color-accent: #58a6ff;
+  --color-dockerGreen: #2ea043;
+  --color-dockerYellow: #d29922;
+  --color-dockerRed: #f85149;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b949e;
+}
