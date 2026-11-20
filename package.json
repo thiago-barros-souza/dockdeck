@@ -4,9 +4,9 @@
   "description": "",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "electron-vite dev --noSandbox",
     "build": "electron-vite build",
-    "preview": "electron-vite preview",
+    "preview": "electron-vite preview --noSandbox",
     "test": "vitest run",
     "test:watch": "vitest"
   },
