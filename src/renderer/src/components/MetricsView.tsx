@@ -17,7 +17,15 @@ interface MetricsViewProps {
   isRunning: boolean;
 }
 
-type TimeRangeOption = '30s' | '1m' | '5m' | '15m' | '1h' | '24h';
+type TimeRangeOption =
+  | '30s'
+  | '1m'
+  | '5m'
+  | '15m'
+  | '1h'
+  | '24h'
+  | '3d'
+  | '7d';
 
 export const MetricsView: React.FC<MetricsViewProps> = ({
   metricsHistory,
@@ -26,6 +34,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
 }) => {
   const [cpuTimeRange, setCpuTimeRange] = useState<TimeRangeOption>('30s');
   const [memTimeRange, setMemTimeRange] = useState<TimeRangeOption>('30s');
+  const [netTimeRange, setNetTimeRange] = useState<TimeRangeOption>('30s');
+  const [diskTimeRange, setDiskTimeRange] = useState<TimeRangeOption>('30s');
 
   if (!isRunning) {
     return (
@@ -61,6 +71,10 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         return 60 * 60 * 1000;
       case '24h':
         return 24 * 60 * 60 * 1000;
+      case '3d':
+        return 3 * 24 * 60 * 60 * 1000;
+      case '7d':
+        return 7 * 24 * 60 * 60 * 1000;
       default:
         return 30 * 1000;
     }
@@ -84,34 +98,83 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
       );
     }
 
-    const isLongRange = range === '24h';
+    const isMultiDay = range === '3d' || range === '7d';
+    const isOneDay = range === '24h';
 
-    return sampled.map((m) => {
+    return sampled.map((m, idx) => {
       const date = new Date(m.timestamp);
-      return {
-        time: date.toLocaleTimeString('pt-BR', {
+
+      // Calcular taxas (KB/s) de rede e disco em relação à amostra anterior
+      const prev = idx > 0 ? sampled[idx - 1] : m;
+      const deltaSec = Math.max(0.5, (m.timestamp - prev.timestamp) / 1000);
+
+      const netRxRateKB =
+        idx === 0
+          ? 0
+          : Math.max(0, (m.networkRx - prev.networkRx) / 1024 / deltaSec);
+      const netTxRateKB =
+        idx === 0
+          ? 0
+          : Math.max(0, (m.networkTx - prev.networkTx) / 1024 / deltaSec);
+
+      const diskReadRateKB =
+        idx === 0
+          ? 0
+          : Math.max(0, (m.blockRead - prev.blockRead) / 1024 / deltaSec);
+      const diskWriteRateKB =
+        idx === 0
+          ? 0
+          : Math.max(0, (m.blockWrite - prev.blockWrite) / 1024 / deltaSec);
+
+      let timeLabel = '';
+      if (isMultiDay) {
+        // Ex: 20/11 21:40
+        timeLabel = `${date.getDate().toString().padStart(2, '0')}/${(
+          date.getMonth() + 1
+        )
+          .toString()
+          .padStart(2, '0')} ${date
+          .getHours()
+          .toString()
+          .padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+      } else if (isOneDay) {
+        // Ex: 21:40
+        timeLabel = date.toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',
-          second: isLongRange ? undefined : '2-digit',
           hour12: false
-        }),
-        fullTime: date.toLocaleTimeString('pt-BR', {
+        });
+      } else {
+        // Ex: 21:40:15
+        timeLabel = date.toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
           hour12: false
-        }),
+        });
+      }
+
+      return {
+        time: timeLabel,
+        fullTime: `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString(
+          'pt-BR',
+          { hour12: false }
+        )}`,
         cpu: m.cpuPercent,
         memPercent: m.memoryPercent,
         memMB: parseFloat((m.memoryUsage / (1024 * 1024)).toFixed(1)),
-        netRxMB: parseFloat((m.networkRx / (1024 * 1024)).toFixed(2)),
-        netTxMB: parseFloat((m.networkTx / (1024 * 1024)).toFixed(2))
+        netRxKB: parseFloat(netRxRateKB.toFixed(1)),
+        netTxKB: parseFloat(netTxRateKB.toFixed(1)),
+        diskReadKB: parseFloat(diskReadRateKB.toFixed(1)),
+        diskWriteKB: parseFloat(diskWriteRateKB.toFixed(1))
       };
     });
   };
 
   const cpuChartData = prepareChartData(cpuTimeRange);
   const memChartData = prepareChartData(memTimeRange);
+  const netChartData = prepareChartData(netTimeRange);
+  const diskChartData = prepareChartData(diskTimeRange);
 
   const renderPeriodSelect = (
     value: TimeRangeOption,
@@ -128,6 +191,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
       <option value="15m">15m</option>
       <option value="1h">1h</option>
       <option value="24h">24h</option>
+      <option value="3d">3 dias</option>
+      <option value="7d">Semana</option>
     </select>
   );
 
@@ -193,9 +258,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         </div>
       </div>
 
-      {/* Gráficos */}
+      {/* Gráficos em Grade 2x2 */}
       <div className="grid grid-cols-2 gap-4">
-        {/* CPU Chart */}
+        {/* 1. CPU Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
             <span>CPU (%)</span>
@@ -243,7 +308,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
           </div>
         </div>
 
-        {/* Memory Chart */}
+        {/* 2. Memory Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
             <span>Memória (MB)</span>
@@ -280,8 +345,122 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                 <Line
                   type="monotone"
                   dataKey="memMB"
-                  name="Memória MB"
+                  name="Memória (MB)"
                   stroke="#3fb950"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 3. Rede Chart (Download & Upload) */}
+        <div className="bg-surface border border-border rounded-lg p-3">
+          <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
+            <span>Rede (KB/s)</span>
+            {renderPeriodSelect(netTimeRange, setNetTimeRange)}
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={netChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <XAxis
+                  dataKey="time"
+                  stroke="#484f58"
+                  fontSize={10}
+                  tickLine={false}
+                  minTickGap={28}
+                />
+                <YAxis
+                  domain={[0, 'auto']}
+                  stroke="#484f58"
+                  fontSize={10}
+                  tickLine={false}
+                  unit="KB/s"
+                />
+                <Tooltip
+                  labelFormatter={(_, payload) =>
+                    payload?.[0]?.payload?.fullTime || ''
+                  }
+                  contentStyle={{
+                    backgroundColor: '#161b22',
+                    borderColor: '#30363d',
+                    fontSize: '11px'
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="netRxKB"
+                  name="↓ Download (KB/s)"
+                  stroke="#38bdf8"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="netTxKB"
+                  name="↑ Upload (KB/s)"
+                  stroke="#c084fc"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 4. Disco Chart (Leitura & Escrita) */}
+        <div className="bg-surface border border-border rounded-lg p-3">
+          <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
+            <span>Disco (KB/s)</span>
+            {renderPeriodSelect(diskTimeRange, setDiskTimeRange)}
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={diskChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <XAxis
+                  dataKey="time"
+                  stroke="#484f58"
+                  fontSize={10}
+                  tickLine={false}
+                  minTickGap={28}
+                />
+                <YAxis
+                  domain={[0, 'auto']}
+                  stroke="#484f58"
+                  fontSize={10}
+                  tickLine={false}
+                  unit="KB/s"
+                />
+                <Tooltip
+                  labelFormatter={(_, payload) =>
+                    payload?.[0]?.payload?.fullTime || ''
+                  }
+                  contentStyle={{
+                    backgroundColor: '#161b22',
+                    borderColor: '#30363d',
+                    fontSize: '11px'
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="diskReadKB"
+                  name="Leitura (KB/s)"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="diskWriteKB"
+                  name="Escrita (KB/s)"
+                  stroke="#f97316"
                   strokeWidth={2}
                   dot={false}
                   isAnimationActive={false}

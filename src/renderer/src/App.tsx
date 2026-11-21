@@ -89,9 +89,18 @@ export const App: React.FC = () => {
       setMetricsHistory((prev) => {
         const next = [...prev, metrics];
         const now = Date.now();
-        const maxAge = 24 * 60 * 60 * 1000; // Limite de 24h
-        if (next.length > 20000) {
-          return next.filter((p) => now - p.timestamp <= maxAge);
+        const maxAge = 7 * 24 * 60 * 60 * 1000; // Limite de 7 dias (Semana)
+
+        // Retenção inteligente quando o histórico cresce
+        if (next.length > 30000) {
+          return next
+            .filter((p) => now - p.timestamp <= maxAge)
+            .filter((p, idx) => {
+              const age = now - p.timestamp;
+              if (age < 3600 * 1000) return true;
+              if (age < 24 * 3600 * 1000) return idx % 5 === 0;
+              return idx % 30 === 0;
+            });
         }
         return next;
       });
