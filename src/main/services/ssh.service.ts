@@ -1,5 +1,6 @@
 import { Client, ConnectConfig } from 'ssh2';
 import net from 'net';
+import fs from 'fs';
 import { ConnectionProfile } from '../../shared/types';
 
 export class SshService {
@@ -18,7 +19,8 @@ export class SshService {
         host: profile.host,
         port: profile.port || 22,
         username: profile.username || 'root',
-        readyTimeout: 20000
+        readyTimeout: 20000,
+        keepaliveInterval: 10000
       };
 
       if (profile.authType === 'privateKey' && profile.privateKey) {
@@ -30,37 +32,77 @@ export class SshService {
         config.password = profile.password;
       }
 
+      let isResolved = false;
+
       client.on('ready', () => {
-        // Create an ephemeral local unix domain socket proxying to the remote docker socket
-        const tmpSocketPath = `/tmp/dockdeck-${Date.now()}-${Math.floor(Math.random() * 10000)}.sock`;
+        const remoteSocketPath = profile.socketPath || '/var/run/docker.sock';
+        const tmpSocketPath = `/tmp/dockdeck-${Date.now()}-${Math.floor(
+          Math.random() * 10000
+        )}.sock`;
         this.localSocketPath = tmpSocketPath;
 
+        try {
+          if (fs.existsSync(tmpSocketPath)) {
+            fs.unlinkSync(tmpSocketPath);
+          }
+        } catch {
+          // Ignore
+        }
+
         const server = net.createServer((socket) => {
-          // Forward stream to remote unix socket /var/run/docker.sock
-          client.openssh_forwardInStreamLocal(
-            '/var/run/docker.sock',
+          // Use openssh_forwardOutStreamLocal (Direct StreamLocal -L forwarding)
+          client.openssh_forwardOutStreamLocal(
+            remoteSocketPath,
             (err, upstream) => {
-              if (err) {
-                socket.destroy();
+              if (err || !upstream) {
+                // Fallback: spawn nc or socat over SSH exec
+                client.exec(
+                  `nc -U ${remoteSocketPath} 2>/dev/null || socat - UNIX-CONNECT:${remoteSocketPath} 2>/dev/null`,
+                  (execErr, stream) => {
+                    if (execErr || !stream) {
+                      socket.destroy();
+                      return;
+                    }
+                    socket.pipe(stream).pipe(socket);
+                    socket.on('error', () => stream.destroy());
+                    stream.on('error', () => socket.destroy());
+                  }
+                );
                 return;
               }
+
               socket.pipe(upstream).pipe(socket);
+              socket.on('error', () => upstream.destroy());
+              upstream.on('error', () => socket.destroy());
             }
           );
         });
 
         server.listen(tmpSocketPath, () => {
           this.localServer = server;
+          isResolved = true;
           resolve(tmpSocketPath);
         });
 
         server.on('error', (err) => {
-          reject(new Error(`Falha ao criar socket local para túnel SSH: ${err.message}`));
+          if (!isResolved) {
+            reject(
+              new Error(
+                `Falha ao criar socket local para túnel SSH: ${err.message}`
+              )
+            );
+          }
         });
       });
 
       client.on('error', (err) => {
-        reject(new Error(`Falha na conexão SSH com ${profile.host}: ${err.message}`));
+        if (!isResolved) {
+          reject(
+            new Error(
+              `Falha na conexão SSH com ${profile.host}: ${err.message}`
+            )
+          );
+        }
       });
 
       client.connect(config);
@@ -78,7 +120,6 @@ export class SshService {
     }
     if (this.localSocketPath) {
       try {
-        const fs = await import('fs');
         if (fs.existsSync(this.localSocketPath)) {
           fs.unlinkSync(this.localSocketPath);
         }

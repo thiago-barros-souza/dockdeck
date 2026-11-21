@@ -68,17 +68,30 @@ export class ConnectionManager {
       throw new Error(`Perfil de conexão com ID "${profileId}" não encontrado.`);
     }
 
-    if (profile.type === 'local') {
-      await this.sshService.disconnect();
-      this.dockerService.setSocketPath(profile.socketPath || '/var/run/docker.sock');
-    } else {
-      // Connect SSH tunnel and get local socket forwarding to remote
-      const tunnelSocketPath = await this.sshService.connectAndTunnel(profile);
-      this.dockerService.setSocketPath(tunnelSocketPath);
-    }
+    const previousProfileId = this.activeProfileId;
 
-    this.activeProfileId = profile.id;
-    return profile;
+    try {
+      if (profile.type === 'local') {
+        await this.sshService.disconnect();
+        this.dockerService.setSocketPath(profile.socketPath || '/var/run/docker.sock');
+        await this.dockerService.getSystemInfo();
+      } else {
+        const tunnelSocketPath = await this.sshService.connectAndTunnel(profile);
+        this.dockerService.setSocketPath(tunnelSocketPath);
+        await this.dockerService.getSystemInfo();
+      }
+
+      this.activeProfileId = profile.id;
+      return profile;
+    } catch (err: any) {
+      // Revert to local if remote failed
+      if (previousProfileId === 'local-default') {
+        await this.sshService.disconnect();
+        this.dockerService.setSocketPath('/var/run/docker.sock');
+        this.activeProfileId = 'local-default';
+      }
+      throw new Error(`Falha ao conectar no Docker de "${profile.name}": ${err.message}`);
+    }
   }
 
   async saveProfile(profile: ConnectionProfile): Promise<ConnectionProfile[]> {

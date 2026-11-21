@@ -164,8 +164,17 @@ export const App: React.FC = () => {
 
   // Switch connection
   const handleSwitchConnection = async (profileId: string) => {
+    setLatestMetrics(null);
+    setMetricsHistory([]);
+    setSelectedContainer(null);
+    setContainers([]);
+
     const res = await window.dockerApi.switchConnection(profileId);
     setActiveProfile(res.active);
+
+    const profilesRes = await window.dockerApi.getProfiles();
+    setProfiles(profilesRes.profiles);
+
     await loadContainers();
   };
 
