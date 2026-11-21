@@ -120,7 +120,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           </>
         ) : (
           <span className="text-xs text-gray-500">
-            Nenhum container selecionado
+            Nenhum
           </span>
         )}
       </div>

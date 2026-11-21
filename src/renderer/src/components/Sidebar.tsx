@@ -77,10 +77,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Server className="w-4 h-4 text-accent flex-shrink-0" />
           <div className="truncate">
             <div className="text-xs font-semibold text-gray-200 truncate">
-              {activeProfile?.name || 'Docker Local'}
+              {activeProfile?.name || 'Local'}
             </div>
             <div className="text-[10px] text-gray-400 uppercase tracking-wider font-mono">
-              {activeProfile?.type === 'ssh' ? `SSH: ${activeProfile.host}` : 'Socket Local'}
+              {activeProfile?.type === 'ssh' ? `SSH: ${activeProfile.host}` : 'Local'}
             </div>
           </div>
         </button>
@@ -91,7 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           className={`p-1.5 text-gray-400 hover:text-gray-100 hover:bg-surfaceHover rounded-md transition-colors ${
             isLoading ? 'animate-spin text-accent' : ''
           }`}
-          title="Recarregar Containers (Ctrl+R)"
+          title="Recarregar (Ctrl+R)"
         >
           <RefreshCw className="w-4 h-4" />
         </button>
@@ -105,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filtrar containers..."
+            placeholder="Filtrar..."
             className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded-md text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent font-mono"
           />
         </div>

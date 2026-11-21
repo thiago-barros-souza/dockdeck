@@ -109,7 +109,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
           <div className="flex items-center gap-2">
             <Server className="w-5 h-5 text-accent" />
             <h2 className="text-sm font-bold text-gray-100">
-              Gerenciador de Servidores & Docker Hosts
+              Servidores
             </h2>
           </div>
           <button
@@ -132,14 +132,14 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
             <>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-gray-300">
-                  Conexões Salvas
+                  Salvos
                 </span>
                 <button
                   onClick={handleStartNew}
                   className="px-2.5 py-1 text-xs bg-accent hover:bg-accent/80 text-background rounded font-semibold flex items-center gap-1 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Novo Servidor SSH</span>
+                  <span>Novo</span>
                 </button>
               </div>
 
@@ -211,7 +211,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
             <form onSubmit={handleSave} className="space-y-3 font-mono text-xs">
               <div>
                 <label className="block text-gray-400 mb-1">
-                  Nome da Conexão
+                  Nome
                 </label>
                 <input
                   type="text"
@@ -225,7 +225,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="block text-gray-400 mb-1">Host / IP</label>
+                  <label className="block text-gray-400 mb-1">Host</label>
                   <input
                     type="text"
                     value={formHost}
@@ -236,7 +236,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 mb-1">Porta SSH</label>
+                  <label className="block text-gray-400 mb-1">Porta</label>
                   <input
                     type="number"
                     value={formPort}
@@ -247,7 +247,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-gray-400 mb-1">Usuário SSH</label>
+                <label className="block text-gray-400 mb-1">Usuário</label>
                 <input
                   type="text"
                   value={formUsername}
@@ -260,7 +260,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
 
               <div>
                 <label className="block text-gray-400 mb-1">
-                  Tipo de Autenticação
+                  Autenticação
                 </label>
                 <div className="flex gap-2">
                   <button
@@ -285,14 +285,14 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                     }`}
                   >
                     <Key className="w-3.5 h-3.5" />
-                    <span>Chave Privada SSH</span>
+                    <span>Chave</span>
                   </button>
                 </div>
               </div>
 
               {formAuthType === 'password' ? (
                 <div>
-                  <label className="block text-gray-400 mb-1">Senha SSH</label>
+                  <label className="block text-gray-400 mb-1">Senha</label>
                   <input
                     type="password"
                     value={formPassword}
@@ -304,7 +304,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
               ) : (
                 <div>
                   <label className="block text-gray-400 mb-1">
-                    Conteúdo da Chave Privada (id_rsa / id_ed25519)
+                    Chave
                   </label>
                   <textarea
                     rows={4}
@@ -328,7 +328,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                   type="submit"
                   className="px-4 py-1.5 bg-accent hover:bg-accent/80 text-background rounded font-semibold transition-colors"
                 >
-                  Salvar Servidor
+                  Salvar
                 </button>
               </div>
             </form>

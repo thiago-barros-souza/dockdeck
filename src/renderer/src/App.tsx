@@ -260,7 +260,7 @@ export const App: React.FC = () => {
           </main>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500 text-xs">
-            Selecione um container na barra lateral para visualizar informações.
+            Nenhum
           </div>
         )}
       </div>

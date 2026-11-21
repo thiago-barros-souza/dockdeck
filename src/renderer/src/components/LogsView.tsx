@@ -116,7 +116,7 @@ export const LogsView: React.FC<LogsViewProps> = ({
               type="text"
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              placeholder="Buscar nos logs..."
+              placeholder="Buscar..."
               className="pl-7 pr-2 py-1 bg-background border border-border rounded text-[11px] text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent w-48 font-mono"
             />
           </div>
@@ -146,10 +146,10 @@ export const LogsView: React.FC<LogsViewProps> = ({
                 ? 'bg-accent/15 text-accent border border-accent/30'
                 : 'text-gray-400 hover:bg-surfaceHover border border-transparent'
             }`}
-            title="Rolar automaticamente para o final"
+            title="Rolar automaticamente"
           >
             <ArrowDown className="w-3 h-3" />
-            <span>Auto-scroll</span>
+            <span>Rolar</span>
           </button>
 
           {/* Download Logs */}

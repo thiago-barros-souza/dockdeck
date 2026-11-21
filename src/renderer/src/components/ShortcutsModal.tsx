@@ -13,17 +13,17 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: '↑ / ↓', desc: 'Navegar na lista de containers' },
-    { key: '1', desc: 'Aba de Métricas' },
-    { key: '2', desc: 'Aba de Logs' },
-    { key: '3', desc: 'Aba de Terminal (Shell Exec)' },
-    { key: '4', desc: 'Aba de Inspecionar' },
-    { key: 'R', desc: 'Reiniciar container selecionado' },
-    { key: 'S', desc: 'Parar container selecionado' },
-    { key: 'P', desc: 'Pausar / Despausar container' },
-    { key: 'Ctrl + R', desc: 'Recarregar lista de containers' },
-    { key: '?', desc: 'Abrir este menu de ajuda' },
-    { key: 'Esc', desc: 'Fechar modais' }
+    { key: '↑ / ↓', desc: 'Navegar' },
+    { key: '1', desc: 'Métricas' },
+    { key: '2', desc: 'Logs' },
+    { key: '3', desc: 'Terminal' },
+    { key: '4', desc: 'Inspecionar' },
+    { key: 'R', desc: 'Reiniciar' },
+    { key: 'S', desc: 'Parar' },
+    { key: 'P', desc: 'Pausar' },
+    { key: 'Ctrl + R', desc: 'Recarregar' },
+    { key: '?', desc: 'Ajuda' },
+    { key: 'Esc', desc: 'Fechar' }
   ];
 
   return (
@@ -33,7 +33,7 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
           <div className="flex items-center gap-2">
             <Keyboard className="w-5 h-5 text-accent" />
             <h2 className="text-sm font-bold text-gray-100">
-              Atalhos de Teclado (Estilo Lazydocker)
+              Atalhos
             </h2>
           </div>
           <button

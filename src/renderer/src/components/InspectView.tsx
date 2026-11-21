@@ -78,7 +78,7 @@ export const InspectView: React.FC<InspectViewProps> = ({ containerId }) => {
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            Visão Geral
+            Geral
           </button>
           <button
             onClick={() => setActiveSubTab('env')}
@@ -88,7 +88,7 @@ export const InspectView: React.FC<InspectViewProps> = ({ containerId }) => {
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            Variáveis de Ambiente ({data.config.env?.length || 0})
+            Variáveis ({data.config.env?.length || 0})
           </button>
           <button
             onClick={() => setActiveSubTab('mounts')}
@@ -118,7 +118,7 @@ export const InspectView: React.FC<InspectViewProps> = ({ containerId }) => {
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            JSON Raw
+            JSON
           </button>
         </div>
 
@@ -135,7 +135,7 @@ export const InspectView: React.FC<InspectViewProps> = ({ containerId }) => {
           ) : (
             <>
               <Copy className="w-3.5 h-3.5" />
-              <span>Copiar JSON</span>
+              <span>Copiar</span>
             </>
           )}
         </button>
@@ -266,7 +266,7 @@ export const InspectView: React.FC<InspectViewProps> = ({ containerId }) => {
 
             <div className="bg-surface border border-border rounded-lg p-4">
               <h4 className="text-xs font-semibold text-gray-300 mb-2">
-                Redes Conectadas
+                Redes
               </h4>
               <div className="space-y-2">
                 {Object.entries(data.networkSettings.networks).map(

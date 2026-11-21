@@ -116,9 +116,9 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500">
         <TerminalIcon className="w-12 h-12 text-gray-600 mb-3" />
-        <h3 className="text-sm font-semibold text-gray-300">Container Parado</h3>
+        <h3 className="text-sm font-semibold text-gray-300">Parado</h3>
         <p className="text-xs text-gray-500 mt-1">
-          Inicie o container para abrir um shell interativo (bash/sh).
+          Inicie o container para abrir o terminal.
         </p>
       </div>
     );
@@ -140,7 +140,7 @@ export const TerminalView: React.FC<TerminalViewProps> = ({
           />
           <span className="font-mono text-gray-400 text-[11px]">
             {status === 'connected'
-              ? 'Shell Ativo (bash / sh)'
+              ? 'Conectado'
               : status === 'connecting'
               ? 'Conectando...'
               : 'Desconectado'}

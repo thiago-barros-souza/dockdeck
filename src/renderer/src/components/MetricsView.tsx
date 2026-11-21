@@ -31,9 +31,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500">
         <ActivityIcon className="w-12 h-12 text-gray-600 mb-3" />
-        <h3 className="text-sm font-semibold text-gray-300">Container Parado</h3>
+        <h3 className="text-sm font-semibold text-gray-300">Parado</h3>
         <p className="text-xs text-gray-500 mt-1">
-          Inicie o container para acompanhar métricas de CPU, memória e rede em tempo real.
+          Inicie o container para acompanhar métricas em tempo real.
         </p>
       </div>
     );
@@ -89,7 +89,6 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
     return sampled.map((m) => {
       const date = new Date(m.timestamp);
       return {
-        // Exibe Hora:Minuto:Segundo (ex: 21:30:15) ou Hora:Minuto para 24h
         time: date.toLocaleTimeString('pt-BR', {
           hour: '2-digit',
           minute: '2-digit',
@@ -118,21 +117,18 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
     value: TimeRangeOption,
     onChange: (val: TimeRangeOption) => void
   ) => (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[10px] text-gray-400 font-mono">Período:</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as TimeRangeOption)}
-        className="bg-background border border-border text-accent text-[11px] font-mono rounded px-2 py-0.5 focus:outline-none focus:border-accent cursor-pointer"
-      >
-        <option value="30s">Últimos 30s</option>
-        <option value="1m">Último 1m</option>
-        <option value="5m">Últimos 5m</option>
-        <option value="15m">Últimos 15m</option>
-        <option value="1h">Última 1h</option>
-        <option value="24h">Últimas 24h</option>
-      </select>
-    </div>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as TimeRangeOption)}
+      className="bg-background border border-border text-accent text-[11px] font-mono rounded px-2 py-0.5 focus:outline-none focus:border-accent cursor-pointer"
+    >
+      <option value="30s">30s</option>
+      <option value="1m">1m</option>
+      <option value="5m">5m</option>
+      <option value="15m">15m</option>
+      <option value="1h">1h</option>
+      <option value="24h">24h</option>
+    </select>
   );
 
   return (
@@ -142,7 +138,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         {/* CPU */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">Uso de CPU</span>
+            <span className="text-xs font-medium">CPU</span>
             <Cpu className="w-4 h-4 text-accent" />
           </div>
           <div className="text-xl font-bold font-mono text-gray-100 mt-1">
@@ -156,7 +152,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         {/* Memória */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">Uso de Memória</span>
+            <span className="text-xs font-medium">Memória</span>
             <HardDrive className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-xl font-bold font-mono text-gray-100 mt-1">
@@ -171,7 +167,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         {/* Rede */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">Tráfego de Rede</span>
+            <span className="text-xs font-medium">Rede</span>
             <Network className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-sm font-bold font-mono text-gray-100 mt-1 truncate">
@@ -185,7 +181,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         {/* Disco (Block I/O) */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">I/O de Disco</span>
+            <span className="text-xs font-medium">Disco</span>
             <Database className="w-4 h-4 text-amber-400" />
           </div>
           <div className="text-sm font-bold font-mono text-gray-100 mt-1 truncate">
@@ -202,7 +198,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         {/* CPU Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
-            <span>Histórico de CPU (%)</span>
+            <span>CPU (%)</span>
             {renderPeriodSelect(cpuTimeRange, setCpuTimeRange)}
           </div>
           <div className="h-48">
@@ -250,7 +246,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         {/* Memory Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
-            <span>Histórico de Memória (MB)</span>
+            <span>Memória (MB)</span>
             {renderPeriodSelect(memTimeRange, setMemTimeRange)}
           </div>
           <div className="h-48">
