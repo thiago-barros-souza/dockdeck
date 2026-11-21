@@ -17,12 +17,15 @@ interface MetricsViewProps {
   isRunning: boolean;
 }
 
+type TimeRangeOption = '30s' | '1m' | '5m' | '15m' | '1h' | '24h';
+
 export const MetricsView: React.FC<MetricsViewProps> = ({
   metricsHistory,
   latestMetrics,
   isRunning
 }) => {
-  const [timeRange, setTimeRange] = useState<'30s' | '1m' | '5m' | '15m' | '1h' | '24h'>('30s');
+  const [cpuTimeRange, setCpuTimeRange] = useState<TimeRangeOption>('30s');
+  const [memTimeRange, setMemTimeRange] = useState<TimeRangeOption>('30s');
 
   if (!isRunning) {
     return (
@@ -44,7 +47,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getTimeWindowMs = (range: string) => {
+  const getTimeWindowMs = (range: TimeRangeOption) => {
     switch (range) {
       case '30s':
         return 30 * 1000;
@@ -63,56 +66,74 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
     }
   };
 
-  const windowMs = getTimeWindowMs(timeRange);
-  const now = Date.now();
-  let filteredHistory = metricsHistory.filter((m) => now - m.timestamp <= windowMs);
+  const prepareChartData = (range: TimeRangeOption) => {
+    const windowMs = getTimeWindowMs(range);
+    const now = Date.now();
+    let filtered = metricsHistory.filter((m) => now - m.timestamp <= windowMs);
 
-  // Se o container acabou de conectar ou o histórico é recente, garante que não fique vazio
-  if (filteredHistory.length === 0 && metricsHistory.length > 0) {
-    filteredHistory = metricsHistory.slice(-30);
-  }
-
-  // Downsample suave se houver muitos pontos para manter a renderização fluida
-  const maxDisplayPoints = 120;
-  let sampledHistory = filteredHistory;
-  if (filteredHistory.length > maxDisplayPoints) {
-    const step = Math.ceil(filteredHistory.length / maxDisplayPoints);
-    sampledHistory = filteredHistory.filter((_, idx) => idx % step === 0 || idx === filteredHistory.length - 1);
-  }
-
-  const chartData = sampledHistory.map((m) => {
-    const date = new Date(m.timestamp);
-    const isLongRange = timeRange === '1h' || timeRange === '24h';
-    return {
-      time: date.toLocaleTimeString([], {
-        hour: isLongRange ? '2-digit' : undefined,
-        minute: '2-digit',
-        second: '2-digit'
-      }),
-      cpu: m.cpuPercent,
-      memPercent: m.memoryPercent,
-      memMB: parseFloat((m.memoryUsage / (1024 * 1024)).toFixed(1)),
-      netRxMB: parseFloat((m.networkRx / (1024 * 1024)).toFixed(2)),
-      netTxMB: parseFloat((m.networkTx / (1024 * 1024)).toFixed(2))
-    };
-  });
-
-  const getTimeRangeLabel = () => {
-    switch (timeRange) {
-      case '30s':
-        return 'Últimos 30s';
-      case '1m':
-        return 'Último 1m';
-      case '5m':
-        return 'Últimos 5m';
-      case '15m':
-        return 'Últimos 15m';
-      case '1h':
-        return 'Última 1h';
-      case '24h':
-        return 'Últimas 24h';
+    if (filtered.length === 0 && metricsHistory.length > 0) {
+      filtered = metricsHistory.slice(-30);
     }
+
+    const maxDisplayPoints = 120;
+    let sampled = filtered;
+    if (filtered.length > maxDisplayPoints) {
+      const step = Math.ceil(filtered.length / maxDisplayPoints);
+      sampled = filtered.filter(
+        (_, idx) => idx % step === 0 || idx === filtered.length - 1
+      );
+    }
+
+    const isLongRange = range === '24h';
+
+    return sampled.map((m) => {
+      const date = new Date(m.timestamp);
+      return {
+        // Exibe Hora:Minuto:Segundo (ex: 21:30:15) ou Hora:Minuto para 24h
+        time: date.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: isLongRange ? undefined : '2-digit',
+          hour12: false
+        }),
+        fullTime: date.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false
+        }),
+        cpu: m.cpuPercent,
+        memPercent: m.memoryPercent,
+        memMB: parseFloat((m.memoryUsage / (1024 * 1024)).toFixed(1)),
+        netRxMB: parseFloat((m.networkRx / (1024 * 1024)).toFixed(2)),
+        netTxMB: parseFloat((m.networkTx / (1024 * 1024)).toFixed(2))
+      };
+    });
   };
+
+  const cpuChartData = prepareChartData(cpuTimeRange);
+  const memChartData = prepareChartData(memTimeRange);
+
+  const renderPeriodSelect = (
+    value: TimeRangeOption,
+    onChange: (val: TimeRangeOption) => void
+  ) => (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] text-gray-400 font-mono">Período:</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as TimeRangeOption)}
+        className="bg-background border border-border text-accent text-[11px] font-mono rounded px-2 py-0.5 focus:outline-none focus:border-accent cursor-pointer"
+      >
+        <option value="30s">Últimos 30s</option>
+        <option value="1m">Último 1m</option>
+        <option value="5m">Últimos 5m</option>
+        <option value="15m">Últimos 15m</option>
+        <option value="1h">Última 1h</option>
+        <option value="24h">Últimas 24h</option>
+      </select>
+    </div>
+  );
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -139,9 +160,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
             <HardDrive className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-xl font-bold font-mono text-gray-100 mt-1">
-            {latestMetrics
-              ? formatBytes(latestMetrics.memoryUsage)
-              : '--'}
+            {latestMetrics ? formatBytes(latestMetrics.memoryUsage) : '--'}
           </div>
           <div className="text-[10px] text-gray-500 mt-0.5">
             Limite: {latestMetrics ? formatBytes(latestMetrics.memoryLimit) : '--'} (
@@ -184,31 +203,18 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
             <span>Histórico de CPU (%)</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-gray-400 font-mono">Período:</span>
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as any)}
-                className="bg-background border border-border text-accent text-[11px] font-mono rounded px-2 py-0.5 focus:outline-none focus:border-accent cursor-pointer"
-              >
-                <option value="30s">Últimos 30s</option>
-                <option value="1m">Último 1m</option>
-                <option value="5m">Últimos 5m</option>
-                <option value="15m">Últimos 15m</option>
-                <option value="1h">Última 1h</option>
-                <option value="24h">Últimas 24h</option>
-              </select>
-            </div>
+            {renderPeriodSelect(cpuTimeRange, setCpuTimeRange)}
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={cpuChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
                 <XAxis
                   dataKey="time"
                   stroke="#484f58"
                   fontSize={10}
                   tickLine={false}
+                  minTickGap={28}
                 />
                 <YAxis
                   domain={[0, 'auto']}
@@ -218,6 +224,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                   unit="%"
                 />
                 <Tooltip
+                  labelFormatter={(_, payload) =>
+                    payload?.[0]?.payload?.fullTime || ''
+                  }
                   contentStyle={{
                     backgroundColor: '#161b22',
                     borderColor: '#30363d',
@@ -242,19 +251,18 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
         <div className="bg-surface border border-border rounded-lg p-3">
           <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
             <span>Histórico de Memória (MB)</span>
-            <span className="text-[10px] text-emerald-400 font-mono">
-              {getTimeRangeLabel()}
-            </span>
+            {renderPeriodSelect(memTimeRange, setMemTimeRange)}
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+              <LineChart data={memChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
                 <XAxis
                   dataKey="time"
                   stroke="#484f58"
                   fontSize={10}
                   tickLine={false}
+                  minTickGap={28}
                 />
                 <YAxis
                   domain={[0, 'auto']}
@@ -264,6 +272,9 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                   unit="MB"
                 />
                 <Tooltip
+                  labelFormatter={(_, payload) =>
+                    payload?.[0]?.payload?.fullTime || ''
+                  }
                   contentStyle={{
                     backgroundColor: '#161b22',
                     borderColor: '#30363d',
