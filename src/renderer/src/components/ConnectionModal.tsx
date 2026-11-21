@@ -8,7 +8,8 @@ import {
   Check,
   Key,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Pencil
 } from 'lucide-react';
 import { Language, translations } from '../i18n';
 
@@ -34,6 +35,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   language
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -52,6 +54,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   if (!isOpen) return null;
 
   const handleStartNew = () => {
+    setEditingId(null);
     setFormName('');
     setFormType('ssh');
     setFormHost('');
@@ -64,28 +67,43 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
     setIsEditing(true);
   };
 
+  const handleEdit = (profile: ConnectionProfile) => {
+    setEditingId(profile.id);
+    setFormName(profile.name);
+    setFormType(profile.type);
+    setFormHost(profile.host || '');
+    setFormPort(profile.port || 22);
+    setFormUsername(profile.username || 'root');
+    setFormAuthType(profile.authType || 'password');
+    setFormPassword(profile.password || '');
+    setFormPrivateKey(profile.privateKey || '');
+    setErrorMsg(null);
+    setIsEditing(true);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName) {
+    if (!formName.trim()) {
       setErrorMsg(language === 'pt' ? 'Informe um nome.' : 'Provide a name.');
       return;
     }
 
-    const newProfile: ConnectionProfile = {
-      id: `profile-${Date.now()}`,
-      name: formName,
+    const targetProfile: ConnectionProfile = {
+      id: editingId || `profile-${Date.now()}`,
+      name: formName.trim(),
       type: formType,
-      host: formHost,
-      port: formPort,
-      username: formUsername,
+      host: formHost.trim(),
+      port: formPort || 22,
+      username: formUsername.trim() || 'root',
       authType: formAuthType,
       password: formPassword,
       privateKey: formPrivateKey
     };
 
     try {
-      await onSaveProfile(newProfile);
+      await onSaveProfile(targetProfile);
       setIsEditing(false);
+      setEditingId(null);
       setErrorMsg(null);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error');
@@ -196,12 +214,21 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                         )}
 
                         {p.id !== 'local-default' && (
-                          <button
-                            onClick={() => onDeleteProfile(p.id)}
-                            className="p-1.5 text-[var(--color-textMuted)] hover:text-rose-500 rounded hover:bg-surfaceHover transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleEdit(p)}
+                              title={t.edit}
+                              className="p-1.5 text-[var(--color-textMuted)] hover:text-accent rounded hover:bg-surfaceHover transition-colors"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteProfile(p.id)}
+                              className="p-1.5 text-[var(--color-textMuted)] hover:text-rose-500 rounded hover:bg-surfaceHover transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -322,7 +349,10 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
               <div className="flex justify-end gap-2 pt-2 border-t border-border">
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditingId(null);
+                  }}
                   className="px-3 py-1.5 rounded text-[var(--color-textMuted)] hover:text-[var(--color-textMain)] hover:bg-surfaceHover transition-colors"
                 >
                   {t.cancel}
