@@ -6,13 +6,11 @@ import {
 import {
   Server,
   Search,
-  Box,
   Layers,
   ChevronRight,
-  RefreshCw,
-  Terminal,
-  Activity
+  RefreshCw
 } from 'lucide-react';
+import { Language, translations } from '../i18n';
 
 interface SidebarProps {
   containers: ContainerSummary[];
@@ -22,6 +20,7 @@ interface SidebarProps {
   onOpenConnections: () => void;
   onRefresh: () => void;
   isLoading: boolean;
+  language: Language;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -31,10 +30,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeProfile,
   onOpenConnections,
   onRefresh,
-  isLoading
+  isLoading,
+  language
 }) => {
   const [filter, setFilter] = useState('');
   const [filterState, setFilterState] = useState<'all' | 'running' | 'exited'>('all');
+  const t = translations[language].sidebar;
 
   const filtered = containers.filter((c) => {
     const matchesText =
@@ -71,16 +72,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={onOpenConnections}
           className="flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-surfaceHover transition-colors text-left max-w-[210px] truncate group"
-          title="Clique para alternar conexão ou configurar SSH"
+          title={activeProfile?.name || t.local}
         >
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
           <Server className="w-4 h-4 text-accent flex-shrink-0" />
           <div className="truncate">
-            <div className="text-xs font-semibold text-gray-200 truncate">
-              {activeProfile?.name || 'Local'}
+            <div className="text-xs font-semibold text-[var(--color-textMain)] truncate">
+              {activeProfile?.name || t.local}
             </div>
-            <div className="text-[10px] text-gray-400 uppercase tracking-wider font-mono">
-              {activeProfile?.type === 'ssh' ? `SSH: ${activeProfile.host}` : 'Local'}
+            <div className="text-[10px] text-[var(--color-textMuted)] uppercase tracking-wider font-mono">
+              {activeProfile?.type === 'ssh' ? `SSH: ${activeProfile.host}` : t.local}
             </div>
           </div>
         </button>
@@ -88,10 +89,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className={`p-1.5 text-gray-400 hover:text-gray-100 hover:bg-surfaceHover rounded-md transition-colors ${
+          className={`p-1.5 text-[var(--color-textMuted)] hover:text-[var(--color-textMain)] hover:bg-surfaceHover rounded-md transition-colors ${
             isLoading ? 'animate-spin text-accent' : ''
           }`}
-          title="Recarregar (Ctrl+R)"
+          title="Refresh (Ctrl+R)"
         >
           <RefreshCw className="w-4 h-4" />
         </button>
@@ -100,13 +101,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Search & Status Filters */}
       <div className="p-3 border-b border-border space-y-2">
         <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-gray-500" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-[var(--color-textMuted)]" />
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filtrar..."
-            className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded-md text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent font-mono"
+            placeholder={t.filterPlaceholder}
+            className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded-md text-xs text-[var(--color-textMain)] placeholder-[var(--color-textMuted)] focus:outline-none focus:border-accent font-mono"
           />
         </div>
 
@@ -116,30 +117,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`flex-1 py-1 text-[11px] rounded transition-colors ${
               filterState === 'all'
                 ? 'bg-accent/15 text-accent font-medium'
-                : 'text-gray-400 hover:bg-surfaceHover'
+                : 'text-[var(--color-textMuted)] hover:bg-surfaceHover'
             }`}
           >
-            Todos ({containers.length})
+            {t.all} ({containers.length})
           </button>
           <button
             onClick={() => setFilterState('running')}
             className={`flex-1 py-1 text-[11px] rounded transition-colors ${
               filterState === 'running'
-                ? 'bg-emerald-500/15 text-emerald-400 font-medium'
-                : 'text-gray-400 hover:bg-surfaceHover'
+                ? 'bg-emerald-500/15 text-emerald-500 font-medium'
+                : 'text-[var(--color-textMuted)] hover:bg-surfaceHover'
             }`}
           >
-            Ativos ({containers.filter((c) => c.state === 'running').length})
+            {t.running} ({containers.filter((c) => c.state === 'running').length})
           </button>
           <button
             onClick={() => setFilterState('exited')}
             className={`flex-1 py-1 text-[11px] rounded transition-colors ${
               filterState === 'exited'
-                ? 'bg-rose-500/15 text-rose-400 font-medium'
-                : 'text-gray-400 hover:bg-surfaceHover'
+                ? 'bg-rose-500/15 text-rose-500 font-medium'
+                : 'text-[var(--color-textMuted)] hover:bg-surfaceHover'
             }`}
           >
-            Parados ({containers.filter((c) => c.state === 'exited').length})
+            {t.exited} ({containers.filter((c) => c.state === 'exited').length})
           </button>
         </div>
       </div>
@@ -147,8 +148,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Container List */}
       <div className="flex-1 overflow-y-auto divide-y divide-border/50">
         {filtered.length === 0 ? (
-          <div className="p-6 text-center text-xs text-gray-500">
-            Nenhum container encontrado.
+          <div className="p-6 text-center text-xs text-[var(--color-textMuted)]">
+            {t.empty}
           </div>
         ) : (
           filtered.map((c) => {
@@ -178,17 +179,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="flex items-center justify-between gap-1">
                     <span
                       className={`text-xs font-semibold truncate ${
-                        isSelected ? 'text-white' : 'text-gray-200'
+                        isSelected ? 'text-accent font-bold' : 'text-[var(--color-textMain)]'
                       }`}
                     >
                       {c.name}
                     </span>
-                    <span className="text-[10px] font-mono text-gray-500 flex-shrink-0">
+                    <span className="text-[10px] font-mono text-[var(--color-textMuted)] flex-shrink-0">
                       {c.shortId}
                     </span>
                   </div>
 
-                  <div className="text-[11px] text-gray-400 font-mono truncate mt-0.5">
+                  <div className="text-[11px] text-[var(--color-textMuted)] font-mono truncate mt-0.5">
                     {c.image}
                   </div>
 
@@ -202,14 +203,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </span>
 
                     {c.project && (
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-border text-gray-300 font-mono flex items-center gap-1 truncate">
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-border text-[var(--color-textMain)] font-mono flex items-center gap-1 truncate">
                         <Layers className="w-2.5 h-2.5 text-accent" />
                         {c.project}
                       </span>
                     )}
 
                     {c.ports.length > 0 && (
-                      <span className="text-[10px] text-gray-500 font-mono truncate">
+                      <span className="text-[10px] text-[var(--color-textMuted)] font-mono truncate">
                         :{c.ports.find((p) => p.publicPort)?.publicPort || c.ports[0].privatePort}
                       </span>
                     )}
@@ -224,9 +225,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer shortcut helper */}
-      <div className="p-2 border-t border-border bg-background/50 text-[10px] text-gray-500 flex items-center justify-between font-mono">
-        <span>Navegação: ↑ / ↓</span>
-        <span>Ações: R, S, P</span>
+      <div className="p-2 border-t border-border bg-background/50 text-[10px] text-[var(--color-textMuted)] flex items-center justify-between font-mono">
+        <span>↑ / ↓</span>
+        <span>R, S, P</span>
       </div>
     </aside>
   );

@@ -5,6 +5,13 @@ import {
   ContainerAction,
   ConnectionProfile
 } from '../../shared/types';
+import {
+  Language,
+  Theme,
+  UserSettings,
+  defaultSettings,
+  translations
+} from './i18n';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { MetricsView } from './components/MetricsView';
@@ -13,6 +20,7 @@ import { InspectView } from './components/InspectView';
 import { TerminalView } from './components/TerminalView';
 import { ConnectionModal } from './components/ConnectionModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
+import { SettingsModal } from './components/SettingsModal';
 
 export const App: React.FC = () => {
   const [containers, setContainers] = useState<ContainerSummary[]>([]);
@@ -21,7 +29,35 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // Metrics history (last 30 samples)
+  // Settings: Theme & Language
+  const [settings, setSettings] = useState<UserSettings>(() => {
+    try {
+      const saved = localStorage.getItem('dockdeck_settings');
+      return saved ? JSON.parse(saved) : defaultSettings;
+    } catch {
+      return defaultSettings;
+    }
+  });
+
+  // Apply theme class to <html>
+  useEffect(() => {
+    if (settings.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('dockdeck_settings', JSON.stringify(settings));
+  }, [settings]);
+
+  const handleSelectLanguage = (language: Language) => {
+    setSettings((prev) => ({ ...prev, language }));
+  };
+
+  const handleSelectTheme = (theme: Theme) => {
+    setSettings((prev) => ({ ...prev, theme }));
+  };
+
+  // Metrics history (retains up to 1 week with intelligent compression)
   const [metricsHistory, setMetricsHistory] = useState<ContainerMetrics[]>([]);
   const [latestMetrics, setLatestMetrics] = useState<ContainerMetrics | null>(null);
 
@@ -30,6 +66,7 @@ export const App: React.FC = () => {
   const [activeProfile, setActiveProfile] = useState<ConnectionProfile | undefined>();
   const [isConnectionsOpen, setIsConnectionsOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Load containers
   const loadContainers = useCallback(async () => {
@@ -119,7 +156,7 @@ export const App: React.FC = () => {
       await window.dockerApi.executeAction(selectedContainer.id, action);
       await loadContainers();
     } catch (err: any) {
-      alert(`Erro ao executar "${action}": ${err.message}`);
+      alert(`Error: ${err.message}`);
     } finally {
       setIsActionLoading(false);
     }
@@ -142,10 +179,9 @@ export const App: React.FC = () => {
     setProfiles(res.profiles);
   };
 
-  // Keyboard navigation (lazydocker-style)
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing inside an input, textarea or terminal
       if (
         document.activeElement?.tagName === 'INPUT' ||
         document.activeElement?.tagName === 'TEXTAREA' ||
@@ -157,6 +193,7 @@ export const App: React.FC = () => {
       if (e.key === 'Escape') {
         setIsConnectionsOpen(false);
         setIsShortcutsOpen(false);
+        setIsSettingsOpen(false);
         return;
       }
 
@@ -216,8 +253,10 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [containers, selectedContainer, loadContainers]);
 
+  const tCommon = translations[settings.language].common;
+
   return (
-    <div className="flex h-screen w-screen bg-background overflow-hidden font-sans">
+    <div className="flex h-screen w-screen bg-background text-[var(--color-textMain)] overflow-hidden font-sans">
       {/* Sidebar with containers list */}
       <Sidebar
         containers={containers}
@@ -227,6 +266,7 @@ export const App: React.FC = () => {
         onOpenConnections={() => setIsConnectionsOpen(true)}
         onRefresh={loadContainers}
         isLoading={isLoading}
+        language={settings.language}
       />
 
       {/* Main Content Area */}
@@ -239,6 +279,8 @@ export const App: React.FC = () => {
           isActionLoading={isActionLoading}
           onOpenShortcuts={() => setIsShortcutsOpen(true)}
           onOpenConnections={() => setIsConnectionsOpen(true)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          language={settings.language}
         />
 
         {selectedContainer ? (
@@ -248,12 +290,16 @@ export const App: React.FC = () => {
                 metricsHistory={metricsHistory}
                 latestMetrics={latestMetrics}
                 isRunning={selectedContainer.state === 'running'}
+                language={settings.language}
+                theme={settings.theme}
               />
             )}
             {activeTab === 'logs' && (
               <LogsView
                 containerId={selectedContainer.id}
                 containerName={selectedContainer.name}
+                language={settings.language}
+                theme={settings.theme}
               />
             )}
             {activeTab === 'terminal' && (
@@ -261,15 +307,20 @@ export const App: React.FC = () => {
                 containerId={selectedContainer.id}
                 containerName={selectedContainer.name}
                 isRunning={selectedContainer.state === 'running'}
+                language={settings.language}
+                theme={settings.theme}
               />
             )}
             {activeTab === 'inspect' && (
-              <InspectView containerId={selectedContainer.id} />
+              <InspectView
+                containerId={selectedContainer.id}
+                language={settings.language}
+              />
             )}
           </main>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500 text-xs">
-            Nenhum
+          <div className="flex-1 flex items-center justify-center text-[var(--color-textMuted)] text-xs">
+            {tCommon.none}
           </div>
         )}
       </div>
@@ -283,11 +334,22 @@ export const App: React.FC = () => {
         onSwitchConnection={handleSwitchConnection}
         onSaveProfile={handleSaveProfile}
         onDeleteProfile={handleDeleteProfile}
+        language={settings.language}
       />
 
       <ShortcutsModal
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
+        language={settings.language}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        language={settings.language}
+        theme={settings.theme}
+        onSelectLanguage={handleSelectLanguage}
+        onSelectTheme={handleSelectTheme}
       />
     </div>
   );

@@ -14,8 +14,10 @@ import {
   FileText,
   Search,
   HelpCircle,
-  Server
+  Server,
+  Settings as SettingsIcon
 } from 'lucide-react';
+import { Language, translations } from '../i18n';
 
 interface TopBarProps {
   selectedContainer: ContainerSummary | null;
@@ -25,6 +27,8 @@ interface TopBarProps {
   isActionLoading: boolean;
   onOpenShortcuts: () => void;
   onOpenConnections: () => void;
+  onOpenSettings: () => void;
+  language: Language;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -34,8 +38,12 @@ export const TopBar: React.FC<TopBarProps> = ({
   onExecuteAction,
   isActionLoading,
   onOpenShortcuts,
-  onOpenConnections
+  onOpenConnections,
+  onOpenSettings,
+  language
 }) => {
+  const t = translations[language];
+
   return (
     <header className="h-14 bg-surface border-b border-border flex items-center justify-between px-4 flex-shrink-0">
       {/* Left: Container info */}
@@ -43,10 +51,10 @@ export const TopBar: React.FC<TopBarProps> = ({
         {selectedContainer ? (
           <>
             <div className="flex items-center gap-2 truncate">
-              <span className="font-semibold text-sm text-gray-100 truncate">
+              <span className="font-semibold text-sm text-[var(--color-textMain)] truncate">
                 {selectedContainer.name}
               </span>
-              <span className="text-xs font-mono text-gray-500">
+              <span className="text-xs font-mono text-[var(--color-textMuted)]">
                 ({selectedContainer.shortId})
               </span>
             </div>
@@ -58,49 +66,49 @@ export const TopBar: React.FC<TopBarProps> = ({
                   onClick={() => onExecuteAction('start')}
                   disabled={isActionLoading}
                   className="px-2.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                  title="Iniciar Container"
+                  title="Start"
                 >
                   <Play className="w-3 h-3 fill-current" />
-                  <span>Start</span>
+                  <span>{t.actions.start}</span>
                 </button>
               ) : (
                 <>
                   <button
                     onClick={() => onExecuteAction('restart')}
                     disabled={isActionLoading}
-                    className="px-2.5 py-1 text-xs bg-surfaceHover hover:bg-border text-gray-200 border border-border rounded font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    title="Reiniciar Container (R)"
+                    className="px-2.5 py-1 text-xs bg-surfaceHover hover:bg-border text-[var(--color-textMain)] border border-border rounded font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    title="Restart (R)"
                   >
                     <RotateCw className="w-3 h-3 text-accent" />
-                    <span>Restart</span>
+                    <span>{t.actions.restart}</span>
                   </button>
 
                   <button
                     onClick={() => onExecuteAction('stop')}
                     disabled={isActionLoading}
-                    className="px-2.5 py-1 text-xs bg-surfaceHover hover:bg-rose-950/40 text-rose-400 border border-rose-500/30 rounded font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                    title="Parar Container (S)"
+                    className="px-2.5 py-1 text-xs bg-surfaceHover hover:bg-rose-950/40 text-rose-500 border border-rose-500/30 rounded font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    title="Stop (S)"
                   >
                     <Square className="w-3 h-3 fill-current" />
-                    <span>Stop</span>
+                    <span>{t.actions.stop}</span>
                   </button>
 
                   {selectedContainer.state === 'paused' ? (
                     <button
                       onClick={() => onExecuteAction('unpause')}
                       disabled={isActionLoading}
-                      className="px-2.5 py-1 text-xs bg-surfaceHover hover:bg-border text-amber-400 border border-amber-500/30 rounded font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                      title="Despausar"
+                      className="px-2.5 py-1 text-xs bg-surfaceHover hover:bg-border text-amber-500 border border-amber-500/30 rounded font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      title="Unpause"
                     >
                       <Play className="w-3 h-3 fill-current" />
-                      <span>Unpause</span>
+                      <span>{t.actions.unpause}</span>
                     </button>
                   ) : (
                     <button
                       onClick={() => onExecuteAction('pause')}
                       disabled={isActionLoading}
-                      className="px-2 py-1 text-xs text-gray-400 hover:text-amber-400 hover:bg-surfaceHover rounded transition-colors disabled:opacity-50"
-                      title="Pausar (P)"
+                      className="px-2 py-1 text-xs text-[var(--color-textMuted)] hover:text-amber-500 hover:bg-surfaceHover rounded transition-colors disabled:opacity-50"
+                      title="Pause (P)"
                     >
                       <Pause className="w-3.5 h-3.5" />
                     </button>
@@ -111,16 +119,16 @@ export const TopBar: React.FC<TopBarProps> = ({
               <button
                 onClick={() => onExecuteAction('remove')}
                 disabled={isActionLoading}
-                className="px-2 py-1 text-xs text-gray-400 hover:text-rose-400 hover:bg-surfaceHover rounded transition-colors disabled:opacity-50"
-                title="Remover container"
+                className="px-2 py-1 text-xs text-[var(--color-textMuted)] hover:text-rose-500 hover:bg-surfaceHover rounded transition-colors disabled:opacity-50"
+                title="Remove"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
           </>
         ) : (
-          <span className="text-xs text-gray-500">
-            Nenhum
+          <span className="text-xs text-[var(--color-textMuted)]">
+            {t.common.none}
           </span>
         )}
       </div>
@@ -133,11 +141,11 @@ export const TopBar: React.FC<TopBarProps> = ({
             className={`px-3 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-all ${
               activeTab === 'metrics'
                 ? 'bg-surface text-accent shadow-sm'
-                : 'text-gray-400 hover:text-gray-200'
+                : 'text-[var(--color-textMuted)] hover:text-[var(--color-textMain)]'
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>Métricas</span>
+            <span>{t.tabs.metrics}</span>
           </button>
 
           <button
@@ -145,11 +153,11 @@ export const TopBar: React.FC<TopBarProps> = ({
             className={`px-3 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-all ${
               activeTab === 'logs'
                 ? 'bg-surface text-accent shadow-sm'
-                : 'text-gray-400 hover:text-gray-200'
+                : 'text-[var(--color-textMuted)] hover:text-[var(--color-textMain)]'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            <span>Logs</span>
+            <span>{t.tabs.logs}</span>
           </button>
 
           <button
@@ -157,11 +165,11 @@ export const TopBar: React.FC<TopBarProps> = ({
             className={`px-3 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-all ${
               activeTab === 'terminal'
                 ? 'bg-surface text-accent shadow-sm'
-                : 'text-gray-400 hover:text-gray-200'
+                : 'text-[var(--color-textMuted)] hover:text-[var(--color-textMain)]'
             }`}
           >
             <Terminal className="w-3.5 h-3.5" />
-            <span>Terminal</span>
+            <span>{t.tabs.terminal}</span>
           </button>
 
           <button
@@ -169,29 +177,37 @@ export const TopBar: React.FC<TopBarProps> = ({
             className={`px-3 py-1 text-xs rounded-md font-medium flex items-center gap-1.5 transition-all ${
               activeTab === 'inspect'
                 ? 'bg-surface text-accent shadow-sm'
-                : 'text-gray-400 hover:text-gray-200'
+                : 'text-[var(--color-textMuted)] hover:text-[var(--color-textMain)]'
             }`}
           >
             <Search className="w-3.5 h-3.5" />
-            <span>Inspecionar</span>
+            <span>{t.tabs.inspect}</span>
           </button>
         </div>
       )}
 
-      {/* Right: Help & Shortcuts */}
+      {/* Right: Servers, Settings & Help */}
       <div className="flex items-center gap-2">
         <button
           onClick={onOpenConnections}
-          className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-surfaceHover rounded-md transition-colors"
-          title="Gerenciar Conexões e Servidores"
+          className="p-1.5 text-[var(--color-textMuted)] hover:text-[var(--color-textMain)] hover:bg-surfaceHover rounded-md transition-colors"
+          title={t.servers.title}
         >
           <Server className="w-4 h-4" />
         </button>
 
         <button
+          onClick={onOpenSettings}
+          className="p-1.5 text-[var(--color-textMuted)] hover:text-accent hover:bg-surfaceHover rounded-md transition-colors"
+          title={t.settings.title}
+        >
+          <SettingsIcon className="w-4 h-4" />
+        </button>
+
+        <button
           onClick={onOpenShortcuts}
-          className="p-1.5 text-gray-400 hover:text-accent hover:bg-surfaceHover rounded-md transition-colors"
-          title="Atalhos de Teclado (?)"
+          className="p-1.5 text-[var(--color-textMuted)] hover:text-accent hover:bg-surfaceHover rounded-md transition-colors"
+          title={t.shortcuts.title}
         >
           <HelpCircle className="w-4 h-4" />
         </button>

@@ -1,22 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-import {
-  Search,
-  ArrowDown,
-  Trash2,
-  Download,
-  Filter
-} from 'lucide-react';
+import { Search, ArrowDown, Trash2, Download } from 'lucide-react';
+import { Language, Theme, translations } from '../i18n';
 
 interface LogsViewProps {
   containerId: string;
   containerName: string;
+  language: Language;
+  theme: Theme;
 }
 
 export const LogsView: React.FC<LogsViewProps> = ({
   containerId,
-  containerName
+  containerName,
+  language,
+  theme
 }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const termInstance = useRef<Terminal | null>(null);
@@ -27,25 +26,44 @@ export const LogsView: React.FC<LogsViewProps> = ({
   const [tailCount, setTailCount] = useState(250);
   const logsBufferRef = useRef<string[]>([]);
 
+  const t = translations[language].logs;
+
   useEffect(() => {
     if (!terminalRef.current) return;
 
+    const isDark = theme === 'dark';
+
     // Initialize xterm
     const term = new Terminal({
-      theme: {
-        background: '#0d1117',
-        foreground: '#c9d1d9',
-        cursor: '#58a6ff',
-        selectionBackground: '#264f78',
-        black: '#010409',
-        red: '#ff7b72',
-        green: '#3fb950',
-        yellow: '#d29922',
-        blue: '#58a6ff',
-        magenta: '#bc8cff',
-        cyan: '#39c5cf',
-        white: '#d0d7de'
-      },
+      theme: isDark
+        ? {
+            background: '#0d1117',
+            foreground: '#c9d1d9',
+            cursor: '#58a6ff',
+            selectionBackground: '#264f78',
+            black: '#010409',
+            red: '#ff7b72',
+            green: '#3fb950',
+            yellow: '#d29922',
+            blue: '#58a6ff',
+            magenta: '#bc8cff',
+            cyan: '#39c5cf',
+            white: '#d0d7de'
+          }
+        : {
+            background: '#ffffff',
+            foreground: '#1f2328',
+            cursor: '#0969da',
+            selectionBackground: '#b6d7fe',
+            black: '#24292f',
+            red: '#cf222e',
+            green: '#1a7f37',
+            yellow: '#9a6700',
+            blue: '#0969da',
+            magenta: '#8250df',
+            cyan: '#1b7c83',
+            white: '#ffffff'
+          },
       fontFamily: 'monospace, Fira Code, JetBrains Mono',
       fontSize: 12,
       lineHeight: 1.25,
@@ -84,7 +102,7 @@ export const LogsView: React.FC<LogsViewProps> = ({
       term.dispose();
       termInstance.current = null;
     };
-  }, [containerId, tailCount]);
+  }, [containerId, tailCount, theme]);
 
   const handleClear = () => {
     if (termInstance.current) {
@@ -111,23 +129,23 @@ export const LogsView: React.FC<LogsViewProps> = ({
         <div className="flex items-center gap-2">
           {/* Filter */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2 top-2 text-gray-500" />
+            <Search className="w-3.5 h-3.5 absolute left-2 top-2 text-[var(--color-textMuted)]" />
             <input
               type="text"
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              placeholder="Buscar..."
-              className="pl-7 pr-2 py-1 bg-background border border-border rounded text-[11px] text-gray-200 placeholder-gray-500 focus:outline-none focus:border-accent w-48 font-mono"
+              placeholder={t.searchPlaceholder}
+              className="pl-7 pr-2 py-1 bg-background border border-border rounded text-[11px] text-[var(--color-textMain)] placeholder-[var(--color-textMuted)] focus:outline-none focus:border-accent w-48 font-mono"
             />
           </div>
 
           {/* Tail selector */}
-          <div className="flex items-center gap-1 text-gray-400 font-mono text-[11px]">
-            <span>Tail:</span>
+          <div className="flex items-center gap-1 text-[var(--color-textMuted)] font-mono text-[11px]">
+            <span>{t.tail}</span>
             <select
               value={tailCount}
               onChange={(e) => setTailCount(Number(e.target.value))}
-              className="bg-background border border-border rounded px-1.5 py-0.5 text-gray-200 focus:outline-none"
+              className="bg-background border border-border rounded px-1.5 py-0.5 text-[var(--color-textMain)] focus:outline-none"
             >
               <option value={100}>100</option>
               <option value={250}>250</option>
@@ -144,19 +162,17 @@ export const LogsView: React.FC<LogsViewProps> = ({
             className={`px-2 py-1 rounded text-[11px] flex items-center gap-1 font-mono transition-colors ${
               autoScroll
                 ? 'bg-accent/15 text-accent border border-accent/30'
-                : 'text-gray-400 hover:bg-surfaceHover border border-transparent'
+                : 'text-[var(--color-textMuted)] hover:bg-surfaceHover border border-transparent'
             }`}
-            title="Rolar automaticamente"
           >
             <ArrowDown className="w-3 h-3" />
-            <span>Rolar</span>
+            <span>{t.scroll}</span>
           </button>
 
           {/* Download Logs */}
           <button
             onClick={handleDownload}
-            className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-surfaceHover rounded transition-colors"
-            title="Baixar logs em arquivo .txt"
+            className="p-1.5 text-[var(--color-textMuted)] hover:text-[var(--color-textMain)] hover:bg-surfaceHover rounded transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
           </button>
@@ -164,8 +180,7 @@ export const LogsView: React.FC<LogsViewProps> = ({
           {/* Clear */}
           <button
             onClick={handleClear}
-            className="p-1.5 text-gray-400 hover:text-rose-400 hover:bg-surfaceHover rounded transition-colors"
-            title="Limpar tela de logs"
+            className="p-1.5 text-[var(--color-textMuted)] hover:text-rose-500 hover:bg-surfaceHover rounded transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -173,7 +188,7 @@ export const LogsView: React.FC<LogsViewProps> = ({
       </div>
 
       {/* Terminal Container */}
-      <div className="flex-1 p-2 bg-[#0d1117] overflow-hidden">
+      <div className="flex-1 p-2 bg-background overflow-hidden">
         <div ref={terminalRef} className="w-full h-full" />
       </div>
     </div>

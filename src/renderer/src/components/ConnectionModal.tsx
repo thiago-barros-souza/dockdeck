@@ -6,11 +6,11 @@ import {
   Plus,
   Trash2,
   Check,
-  Shield,
   Key,
   Lock,
   ArrowRight
 } from 'lucide-react';
+import { Language, translations } from '../i18n';
 
 interface ConnectionModalProps {
   isOpen: boolean;
@@ -20,6 +20,7 @@ interface ConnectionModalProps {
   onSwitchConnection: (profileId: string) => Promise<void>;
   onSaveProfile: (profile: ConnectionProfile) => Promise<void>;
   onDeleteProfile: (profileId: string) => Promise<void>;
+  language: Language;
 }
 
 export const ConnectionModal: React.FC<ConnectionModalProps> = ({
@@ -29,11 +30,14 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   activeProfile,
   onSwitchConnection,
   onSaveProfile,
-  onDeleteProfile
+  onDeleteProfile,
+  language
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const t = translations[language].servers;
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -63,7 +67,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName) {
-      setErrorMsg('Informe um nome para a conexão.');
+      setErrorMsg(language === 'pt' ? 'Informe um nome.' : 'Provide a name.');
       return;
     }
 
@@ -84,7 +88,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
       setIsEditing(false);
       setErrorMsg(null);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Erro ao salvar perfil.');
+      setErrorMsg(err.message || 'Error');
     }
   };
 
@@ -95,7 +99,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
       await onSwitchConnection(id);
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Falha ao conectar no host selecionado.');
+      setErrorMsg(err.message || 'Error');
     } finally {
       setSwitchingId(null);
     }
@@ -108,20 +112,20 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Server className="w-5 h-5 text-accent" />
-            <h2 className="text-sm font-bold text-gray-100">
-              Servidores
+            <h2 className="text-sm font-bold text-[var(--color-textMain)]">
+              {t.title}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-200 p-1 rounded-md hover:bg-surfaceHover transition-colors"
+            className="text-[var(--color-textMuted)] hover:text-[var(--color-textMain)] p-1 rounded-md hover:bg-surfaceHover transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {errorMsg && (
-          <div className="bg-rose-500/10 border-b border-rose-500/30 px-4 py-2.5 text-xs text-rose-400 font-mono">
+          <div className="bg-rose-500/10 border-b border-rose-500/30 px-4 py-2.5 text-xs text-rose-500 font-mono">
             {errorMsg}
           </div>
         )}
@@ -131,15 +135,15 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
           {!isEditing ? (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-gray-300">
-                  Salvos
+                <span className="text-xs font-semibold text-[var(--color-textMuted)]">
+                  {t.saved}
                 </span>
                 <button
                   onClick={handleStartNew}
-                  className="px-2.5 py-1 text-xs bg-accent hover:bg-accent/80 text-background rounded font-semibold flex items-center gap-1 transition-colors"
+                  className="px-2.5 py-1 text-xs bg-accent hover:bg-accent/80 text-white rounded font-semibold flex items-center gap-1 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Novo</span>
+                  <span>{t.new}</span>
                 </button>
               </div>
 
@@ -154,22 +158,22 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                       className={`p-3 rounded-lg border flex items-center justify-between transition-all ${
                         isActive
                           ? 'bg-accent/10 border-accent'
-                          : 'bg-background border-border hover:border-gray-600'
+                          : 'bg-background border-border hover:border-gray-500'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-3 h-3 rounded-full ${
-                            isActive ? 'bg-emerald-400' : 'bg-gray-600'
+                            isActive ? 'bg-emerald-400' : 'bg-gray-400'
                           }`}
                         />
                         <div>
-                          <div className="text-xs font-bold text-gray-100">
+                          <div className="text-xs font-bold text-[var(--color-textMain)]">
                             {p.name}
                           </div>
-                          <div className="text-[11px] font-mono text-gray-400">
+                          <div className="text-[11px] font-mono text-[var(--color-textMuted)]">
                             {p.type === 'local'
-                              ? 'Socket local: /var/run/docker.sock'
+                              ? '/var/run/docker.sock'
                               : `SSH: ${p.username}@${p.host}:${p.port || 22}`}
                           </div>
                         </div>
@@ -177,16 +181,16 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
 
                       <div className="flex items-center gap-2">
                         {isActive ? (
-                          <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1 font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                            <Check className="w-3 h-3" /> Conectado
+                          <span className="text-[11px] font-mono text-emerald-500 flex items-center gap-1 font-semibold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                            <Check className="w-3 h-3" /> {t.connected}
                           </span>
                         ) : (
                           <button
                             onClick={() => handleSwitch(p.id)}
                             disabled={isSwitching}
-                            className="px-3 py-1 text-xs bg-surfaceHover hover:bg-border text-gray-200 border border-border rounded font-medium flex items-center gap-1 transition-colors"
+                            className="px-3 py-1 text-xs bg-surfaceHover hover:bg-border text-[var(--color-textMain)] border border-border rounded font-medium flex items-center gap-1 transition-colors"
                           >
-                            <span>{isSwitching ? 'Conectando...' : 'Conectar'}</span>
+                            <span>{isSwitching ? t.connecting : t.connect}</span>
                             <ArrowRight className="w-3 h-3" />
                           </button>
                         )}
@@ -194,8 +198,7 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                         {p.id !== 'local-default' && (
                           <button
                             onClick={() => onDeleteProfile(p.id)}
-                            className="p-1.5 text-gray-500 hover:text-rose-400 rounded hover:bg-surfaceHover transition-colors"
-                            title="Excluir Conexão"
+                            className="p-1.5 text-[var(--color-textMuted)] hover:text-rose-500 rounded hover:bg-surfaceHover transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -207,60 +210,60 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
               </div>
             </>
           ) : (
-            /* Form to add server */
-            <form onSubmit={handleSave} className="space-y-3 font-mono text-xs">
+            /* Form */
+            <form onSubmit={handleSave} className="space-y-3 font-mono text-xs text-[var(--color-textMain)]">
               <div>
-                <label className="block text-gray-400 mb-1">
-                  Nome
+                <label className="block text-[var(--color-textMuted)] mb-1">
+                  {t.name}
                 </label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Ex: Servidor Produção"
+                  placeholder="Server"
                   required
-                  className="w-full px-3 py-1.5 bg-background border border-border rounded text-gray-200 focus:outline-none focus:border-accent"
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded text-[var(--color-textMain)] focus:outline-none focus:border-accent"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="col-span-2">
-                  <label className="block text-gray-400 mb-1">Host</label>
+                  <label className="block text-[var(--color-textMuted)] mb-1">{t.host}</label>
                   <input
                     type="text"
                     value={formHost}
                     onChange={(e) => setFormHost(e.target.value)}
-                    placeholder="192.168.1.100 ou servidor.com"
+                    placeholder="192.168.1.100"
                     required
-                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-gray-200 focus:outline-none focus:border-accent"
+                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-[var(--color-textMain)] focus:outline-none focus:border-accent"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 mb-1">Porta</label>
+                  <label className="block text-[var(--color-textMuted)] mb-1">{t.port}</label>
                   <input
                     type="number"
                     value={formPort}
                     onChange={(e) => setFormPort(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-gray-200 focus:outline-none focus:border-accent"
+                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-[var(--color-textMain)] focus:outline-none focus:border-accent"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-gray-400 mb-1">Usuário</label>
+                <label className="block text-[var(--color-textMuted)] mb-1">{t.user}</label>
                 <input
                   type="text"
                   value={formUsername}
                   onChange={(e) => setFormUsername(e.target.value)}
-                  placeholder="root ou ubuntu"
+                  placeholder="root"
                   required
-                  className="w-full px-3 py-1.5 bg-background border border-border rounded text-gray-200 focus:outline-none focus:border-accent"
+                  className="w-full px-3 py-1.5 bg-background border border-border rounded text-[var(--color-textMain)] focus:outline-none focus:border-accent"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 mb-1">
-                  Autenticação
+                <label className="block text-[var(--color-textMuted)] mb-1">
+                  {t.auth}
                 </label>
                 <div className="flex gap-2">
                   <button
@@ -269,11 +272,11 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                     className={`flex-1 py-1.5 border rounded flex items-center justify-center gap-1.5 transition-colors ${
                       formAuthType === 'password'
                         ? 'bg-accent/15 border-accent text-accent font-semibold'
-                        : 'border-border text-gray-400 hover:bg-surfaceHover'
+                        : 'border-border text-[var(--color-textMuted)] hover:bg-surfaceHover'
                     }`}
                   >
                     <Lock className="w-3.5 h-3.5" />
-                    <span>Senha</span>
+                    <span>{t.password}</span>
                   </button>
                   <button
                     type="button"
@@ -281,37 +284,37 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                     className={`flex-1 py-1.5 border rounded flex items-center justify-center gap-1.5 transition-colors ${
                       formAuthType === 'privateKey'
                         ? 'bg-accent/15 border-accent text-accent font-semibold'
-                        : 'border-border text-gray-400 hover:bg-surfaceHover'
+                        : 'border-border text-[var(--color-textMuted)] hover:bg-surfaceHover'
                     }`}
                   >
                     <Key className="w-3.5 h-3.5" />
-                    <span>Chave</span>
+                    <span>{t.key}</span>
                   </button>
                 </div>
               </div>
 
               {formAuthType === 'password' ? (
                 <div>
-                  <label className="block text-gray-400 mb-1">Senha</label>
+                  <label className="block text-[var(--color-textMuted)] mb-1">{t.password}</label>
                   <input
                     type="password"
                     value={formPassword}
                     onChange={(e) => setFormPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-gray-200 focus:outline-none focus:border-accent"
+                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-[var(--color-textMain)] focus:outline-none focus:border-accent"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-gray-400 mb-1">
-                    Chave
+                  <label className="block text-[var(--color-textMuted)] mb-1">
+                    {t.key}
                   </label>
                   <textarea
                     rows={4}
                     value={formPrivateKey}
                     onChange={(e) => setFormPrivateKey(e.target.value)}
                     placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;..."
-                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-gray-200 focus:outline-none focus:border-accent"
+                    className="w-full px-3 py-1.5 bg-background border border-border rounded text-[var(--color-textMain)] focus:outline-none focus:border-accent"
                   />
                 </div>
               )}
@@ -320,15 +323,15 @@ export const ConnectionModal: React.FC<ConnectionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1.5 rounded text-gray-400 hover:text-gray-200 hover:bg-surfaceHover transition-colors"
+                  className="px-3 py-1.5 rounded text-[var(--color-textMuted)] hover:text-[var(--color-textMain)] hover:bg-surfaceHover transition-colors"
                 >
-                  Cancelar
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-accent hover:bg-accent/80 text-background rounded font-semibold transition-colors"
+                  className="px-4 py-1.5 bg-accent hover:bg-accent/80 text-white rounded font-semibold transition-colors"
                 >
-                  Salvar
+                  {t.save}
                 </button>
               </div>
             </form>

@@ -10,11 +10,14 @@ import {
   CartesianGrid
 } from 'recharts';
 import { Cpu, HardDrive, Network, Database } from 'lucide-react';
+import { Language, Theme, translations } from '../i18n';
 
 interface MetricsViewProps {
   metricsHistory: ContainerMetrics[];
   latestMetrics: ContainerMetrics | null;
   isRunning: boolean;
+  language: Language;
+  theme: Theme;
 }
 
 type TimeRangeOption =
@@ -30,20 +33,32 @@ type TimeRangeOption =
 export const MetricsView: React.FC<MetricsViewProps> = ({
   metricsHistory,
   latestMetrics,
-  isRunning
+  isRunning,
+  language,
+  theme
 }) => {
   const [cpuTimeRange, setCpuTimeRange] = useState<TimeRangeOption>('30s');
   const [memTimeRange, setMemTimeRange] = useState<TimeRangeOption>('30s');
   const [netTimeRange, setNetTimeRange] = useState<TimeRangeOption>('30s');
   const [diskTimeRange, setDiskTimeRange] = useState<TimeRangeOption>('30s');
 
+  const t = translations[language].metrics;
+  const tPeriods = translations[language].periods;
+
+  const isDark = theme === 'dark';
+  const gridColor = isDark ? '#21262d' : '#e5e7eb';
+  const axisColor = isDark ? '#484f58' : '#9ca3af';
+  const tooltipBg = isDark ? '#161b22' : '#ffffff';
+  const tooltipBorder = isDark ? '#30363d' : '#d0d7de';
+  const tooltipText = isDark ? '#c9d1d9' : '#1f2328';
+
   if (!isRunning) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500">
-        <ActivityIcon className="w-12 h-12 text-gray-600 mb-3" />
-        <h3 className="text-sm font-semibold text-gray-300">Parado</h3>
-        <p className="text-xs text-gray-500 mt-1">
-          Inicie o container para acompanhar métricas em tempo real.
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[var(--color-textMuted)]">
+        <ActivityIcon className="w-12 h-12 text-[var(--color-textMuted)] mb-3" />
+        <h3 className="text-sm font-semibold text-[var(--color-textMain)]">{t.stopped}</h3>
+        <p className="text-xs text-[var(--color-textMuted)] mt-1">
+          {t.stoppedDesc}
         </p>
       </div>
     );
@@ -103,8 +118,6 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
 
     return sampled.map((m, idx) => {
       const date = new Date(m.timestamp);
-
-      // Calcular taxas (KB/s) de rede e disco em relação à amostra anterior
       const prev = idx > 0 ? sampled[idx - 1] : m;
       const deltaSec = Math.max(0.5, (m.timestamp - prev.timestamp) / 1000);
 
@@ -128,7 +141,6 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
 
       let timeLabel = '';
       if (isMultiDay) {
-        // Ex: 20/11 21:40
         timeLabel = `${date.getDate().toString().padStart(2, '0')}/${(
           date.getMonth() + 1
         )
@@ -138,15 +150,13 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
           .toString()
           .padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
       } else if (isOneDay) {
-        // Ex: 21:40
-        timeLabel = date.toLocaleTimeString('pt-BR', {
+        timeLabel = date.toLocaleTimeString(language === 'pt' ? 'pt-BR' : 'en-US', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: false
         });
       } else {
-        // Ex: 21:40:15
-        timeLabel = date.toLocaleTimeString('pt-BR', {
+        timeLabel = date.toLocaleTimeString(language === 'pt' ? 'pt-BR' : 'en-US', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
@@ -156,8 +166,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
 
       return {
         time: timeLabel,
-        fullTime: `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString(
-          'pt-BR',
+        fullTime: `${date.toLocaleDateString(language === 'pt' ? 'pt-BR' : 'en-US')} ${date.toLocaleTimeString(
+          language === 'pt' ? 'pt-BR' : 'en-US',
           { hour12: false }
         )}`,
         cpu: m.cpuPercent,
@@ -191,8 +201,8 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
       <option value="15m">15m</option>
       <option value="1h">1h</option>
       <option value="24h">24h</option>
-      <option value="3d">3 dias</option>
-      <option value="7d">Semana</option>
+      <option value="3d">{tPeriods['3d']}</option>
+      <option value="7d">{tPeriods['7d']}</option>
     </select>
   );
 
@@ -202,57 +212,57 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
       <div className="grid grid-cols-4 gap-3">
         {/* CPU */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">CPU</span>
+          <div className="flex items-center justify-between text-[var(--color-textMuted)]">
+            <span className="text-xs font-medium">{t.cpu}</span>
             <Cpu className="w-4 h-4 text-accent" />
           </div>
-          <div className="text-xl font-bold font-mono text-gray-100 mt-1">
+          <div className="text-xl font-bold font-mono text-[var(--color-textMain)] mt-1">
             {latestMetrics ? `${latestMetrics.cpuPercent.toFixed(1)}%` : '--'}
           </div>
-          <div className="text-[10px] text-gray-500 mt-0.5">
-            PIDs: {latestMetrics?.pids ?? '--'}
+          <div className="text-[10px] text-[var(--color-textMuted)] mt-0.5">
+            {t.pids}: {latestMetrics?.pids ?? '--'}
           </div>
         </div>
 
         {/* Memória */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">Memória</span>
-            <HardDrive className="w-4 h-4 text-emerald-400" />
+          <div className="flex items-center justify-between text-[var(--color-textMuted)]">
+            <span className="text-xs font-medium">{t.memory}</span>
+            <HardDrive className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-xl font-bold font-mono text-gray-100 mt-1">
+          <div className="text-xl font-bold font-mono text-[var(--color-textMain)] mt-1">
             {latestMetrics ? formatBytes(latestMetrics.memoryUsage) : '--'}
           </div>
-          <div className="text-[10px] text-gray-500 mt-0.5">
-            Limite: {latestMetrics ? formatBytes(latestMetrics.memoryLimit) : '--'} (
+          <div className="text-[10px] text-[var(--color-textMuted)] mt-0.5">
+            {t.limit}: {latestMetrics ? formatBytes(latestMetrics.memoryLimit) : '--'} (
             {latestMetrics ? `${latestMetrics.memoryPercent.toFixed(1)}%` : '--'})
           </div>
         </div>
 
         {/* Rede */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">Rede</span>
-            <Network className="w-4 h-4 text-cyan-400" />
+          <div className="flex items-center justify-between text-[var(--color-textMuted)]">
+            <span className="text-xs font-medium">{t.network}</span>
+            <Network className="w-4 h-4 text-cyan-500" />
           </div>
-          <div className="text-sm font-bold font-mono text-gray-100 mt-1 truncate">
+          <div className="text-sm font-bold font-mono text-[var(--color-textMain)] mt-1 truncate">
             ↓ {latestMetrics ? formatBytes(latestMetrics.networkRx) : '--'}
           </div>
-          <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+          <div className="text-[10px] text-[var(--color-textMuted)] mt-0.5 truncate">
             ↑ {latestMetrics ? formatBytes(latestMetrics.networkTx) : '--'}
           </div>
         </div>
 
-        {/* Disco (Block I/O) */}
+        {/* Disco */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="flex items-center justify-between text-gray-400">
-            <span className="text-xs font-medium">Disco</span>
-            <Database className="w-4 h-4 text-amber-400" />
+          <div className="flex items-center justify-between text-[var(--color-textMuted)]">
+            <span className="text-xs font-medium">{t.disk}</span>
+            <Database className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-sm font-bold font-mono text-gray-100 mt-1 truncate">
+          <div className="text-sm font-bold font-mono text-[var(--color-textMain)] mt-1 truncate">
             R: {latestMetrics ? formatBytes(latestMetrics.blockRead) : '--'}
           </div>
-          <div className="text-[10px] text-gray-500 mt-0.5 truncate">
+          <div className="text-[10px] text-[var(--color-textMuted)] mt-0.5 truncate">
             W: {latestMetrics ? formatBytes(latestMetrics.blockWrite) : '--'}
           </div>
         </div>
@@ -262,24 +272,24 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
       <div className="grid grid-cols-2 gap-4">
         {/* 1. CPU Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
-            <span>CPU (%)</span>
+          <div className="text-xs font-semibold text-[var(--color-textMain)] mb-2 flex items-center justify-between">
+            <span>{t.cpu} (%)</span>
             {renderPeriodSelect(cpuTimeRange, setCpuTimeRange)}
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={cpuChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis
                   dataKey="time"
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   minTickGap={28}
                 />
                 <YAxis
                   domain={[0, 'auto']}
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   unit="%"
@@ -289,15 +299,17 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                     payload?.[0]?.payload?.fullTime || ''
                   }
                   contentStyle={{
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
-                    fontSize: '11px'
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
+                    color: tooltipText,
+                    fontSize: '11px',
+                    borderRadius: '8px'
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="cpu"
-                  name="CPU %"
+                  name={`${t.cpu} %`}
                   stroke="#58a6ff"
                   strokeWidth={2}
                   dot={false}
@@ -310,24 +322,24 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
 
         {/* 2. Memory Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
-            <span>Memória (MB)</span>
+          <div className="text-xs font-semibold text-[var(--color-textMain)] mb-2 flex items-center justify-between">
+            <span>{t.memory} (MB)</span>
             {renderPeriodSelect(memTimeRange, setMemTimeRange)}
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={memChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis
                   dataKey="time"
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   minTickGap={28}
                 />
                 <YAxis
                   domain={[0, 'auto']}
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   unit="MB"
@@ -337,15 +349,17 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                     payload?.[0]?.payload?.fullTime || ''
                   }
                   contentStyle={{
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
-                    fontSize: '11px'
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
+                    color: tooltipText,
+                    fontSize: '11px',
+                    borderRadius: '8px'
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="memMB"
-                  name="Memória (MB)"
+                  name={`${t.memory} (MB)`}
                   stroke="#3fb950"
                   strokeWidth={2}
                   dot={false}
@@ -356,26 +370,26 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
           </div>
         </div>
 
-        {/* 3. Rede Chart (Download & Upload) */}
+        {/* 3. Rede Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
-            <span>Rede (KB/s)</span>
+          <div className="text-xs font-semibold text-[var(--color-textMain)] mb-2 flex items-center justify-between">
+            <span>{t.network} (KB/s)</span>
             {renderPeriodSelect(netTimeRange, setNetTimeRange)}
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={netChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis
                   dataKey="time"
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   minTickGap={28}
                 />
                 <YAxis
                   domain={[0, 'auto']}
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   unit="KB/s"
@@ -385,15 +399,17 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                     payload?.[0]?.payload?.fullTime || ''
                   }
                   contentStyle={{
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
-                    fontSize: '11px'
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
+                    color: tooltipText,
+                    fontSize: '11px',
+                    borderRadius: '8px'
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="netRxKB"
-                  name="↓ Download (KB/s)"
+                  name={`${t.download} (KB/s)`}
                   stroke="#38bdf8"
                   strokeWidth={2}
                   dot={false}
@@ -402,7 +418,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                 <Line
                   type="monotone"
                   dataKey="netTxKB"
-                  name="↑ Upload (KB/s)"
+                  name={`${t.upload} (KB/s)`}
                   stroke="#c084fc"
                   strokeWidth={2}
                   dot={false}
@@ -413,26 +429,26 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
           </div>
         </div>
 
-        {/* 4. Disco Chart (Leitura & Escrita) */}
+        {/* 4. Disco Chart */}
         <div className="bg-surface border border-border rounded-lg p-3">
-          <div className="text-xs font-semibold text-gray-300 mb-2 flex items-center justify-between">
-            <span>Disco (KB/s)</span>
+          <div className="text-xs font-semibold text-[var(--color-textMain)] mb-2 flex items-center justify-between">
+            <span>{t.disk} (KB/s)</span>
             {renderPeriodSelect(diskTimeRange, setDiskTimeRange)}
           </div>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={diskChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#21262d" />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis
                   dataKey="time"
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   minTickGap={28}
                 />
                 <YAxis
                   domain={[0, 'auto']}
-                  stroke="#484f58"
+                  stroke={axisColor}
                   fontSize={10}
                   tickLine={false}
                   unit="KB/s"
@@ -442,15 +458,17 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                     payload?.[0]?.payload?.fullTime || ''
                   }
                   contentStyle={{
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
-                    fontSize: '11px'
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
+                    color: tooltipText,
+                    fontSize: '11px',
+                    borderRadius: '8px'
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="diskReadKB"
-                  name="Leitura (KB/s)"
+                  name={`${t.read} (KB/s)`}
                   stroke="#f59e0b"
                   strokeWidth={2}
                   dot={false}
@@ -459,7 +477,7 @@ export const MetricsView: React.FC<MetricsViewProps> = ({
                 <Line
                   type="monotone"
                   dataKey="diskWriteKB"
-                  name="Escrita (KB/s)"
+                  name={`${t.write} (KB/s)`}
                   stroke="#f97316"
                   strokeWidth={2}
                   dot={false}
