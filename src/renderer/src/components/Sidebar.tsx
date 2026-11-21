@@ -51,16 +51,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const getStatusColor = (state: ContainerSummary['state']) => {
     switch (state) {
       case 'running':
-        return 'bg-emerald-500 text-emerald-400 border-emerald-500/30';
+        return 'bg-emerald-600 text-white font-semibold border-emerald-500/40';
       case 'paused':
-        return 'bg-amber-500 text-amber-400 border-amber-500/30';
+        return 'bg-amber-600 text-white font-semibold border-amber-500/40';
       case 'restarting':
-        return 'bg-cyan-500 text-cyan-400 border-cyan-500/30';
+        return 'bg-cyan-600 text-white font-semibold border-cyan-500/40';
       case 'exited':
       case 'dead':
-        return 'bg-rose-500 text-rose-400 border-rose-500/30';
+        return 'bg-rose-600 text-white font-semibold border-rose-500/40';
       default:
-        return 'bg-gray-500 text-gray-400 border-gray-500/30';
+        return 'bg-gray-600 text-white font-semibold border-gray-500/40';
     }
   };
 
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                   <div className="flex items-center gap-2 mt-1.5">
                     <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded border font-mono uppercase ${getStatusColor(
+                      className={`text-[10px] px-1.5 py-0.5 rounded border font-mono uppercase font-semibold text-white ${getStatusColor(
                         c.state
                       )}`}
                     >

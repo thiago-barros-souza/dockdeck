@@ -88,7 +88,11 @@ export const App: React.FC = () => {
       setLatestMetrics(metrics);
       setMetricsHistory((prev) => {
         const next = [...prev, metrics];
-        if (next.length > 30) next.shift();
+        const now = Date.now();
+        const maxAge = 24 * 60 * 60 * 1000; // Limite de 24h
+        if (next.length > 20000) {
+          return next.filter((p) => now - p.timestamp <= maxAge);
+        }
         return next;
       });
     });
